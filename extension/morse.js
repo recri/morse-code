@@ -27,7 +27,7 @@
 ** morse_code_output translates combines a table and player
 **   to translate text into audio
 ** morse_code_iambic_keyer implements the logic of an iambic keyer
-** morse_code_iambic_input combines a keyer and a player to
+** morse_code_input combines a keyer and a player to
 **   translate keying events into audio
 ** morse_code_detone translates morse code audio into keying transitions
 ** morse_code_detime translates keying transitions into morse code elements
@@ -577,9 +577,11 @@ function morse_code_input(context) {
 	    }
 	},
 	iambicFocus : function() {
+	    console.log("iambicFocus()");
 	    input.start();
 	},
 	iambicBlur : function() {
+	    console.log("iambicBlur()");
 	    input.stop();
 	    input.raw_dit_on = false;
 	    input.raw_dah_on = false;
@@ -587,8 +589,10 @@ function morse_code_input(context) {
 	    input.off();
 	},
 	straightFocus : function() {
+	    console.log("straightFocus()");
 	},
 	straightBlur : function() {
+	    console.log("straightBlur()");
 	    if (input.raw_key_on) {
 		input.raw_key_on = false;
 		input.off();
@@ -915,7 +919,7 @@ function morse_code_station() {
 	output : morse_code_output(context),
 	output_detimer : morse_code_detime(context),
 	output_decoder : morse_code_decode(context),
-	input : morse_code_iambic_input(context),
+	input : morse_code_input(context),
 	input_detimer : morse_code_detime(context),
 	input_decoder : morse_code_decode(context),
 	
