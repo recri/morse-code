@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Midi Input Library</title>
+  </head>
+  <body>
+    <script type="text/javascript" src="midi.js"></script>
+    <div>
+      <p>MIDI input requires support in Chrome that isn't there as of April 1, 2015.  The support
+      appears to be targetted for Release 43.  My Chromebook is running release 41 on the stable channel.</p>
+      <p>To get what little support exists you need to open chrome://flags and enable the flag associated
+      with "Enable Web MIDI Api".  That will, after a restart, allow the navigator.requestMIDIAccess()
+      method to be called, but you won't be able to connect to any of the MIDI devices discovered.</p>
+      
+    </div>
+  </body>
+</html>

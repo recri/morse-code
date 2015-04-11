@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Morse Code Library</title>
+  </head>
+  <body>
+    <script type="text/javascript" src="morse.js"></script>
+    <script type="text/javascript">
+      var station = morse_code_station();
+      station.input.setWPM(15);
+      station.output.setWPM(15);
+    </script>
+    <style>
+      .center {
+	margin-left: auto;
+	margin-right: auto;
+	width: 50%;
+	background-color: #c0c0c0;
+      }
+      .right {
+	float: right;
+	width: 200px;
+	background-color: #b0e0e6;
+      }
+      .left {
+	float: left;
+	width: 200px;
+	background-color: #b0e0e6;
+      }
+      h1 {
+	text-align: center;
+      }
+      input {
+	text-align: center;
+      }
+    </style>
+    <div class="center">
+      <h1>Learn Morse Code</h1>
+      <div class="left">
+	<form>
+	  <img src="straight.jpg" width="160" height="120" alt="straight key"/>
+	  <input class="center" type="text" onkeydown="station.input.straightKeydown(event)" onkeyup="station.input.straightKeyup(event)"
+		  id="straight" onfocus="station.input.straightFocus()" onblur="station.input.straightBlur()"><br/>
+	</form>
+      </div>
+      <div class="right">
+	<form >
+	  <img src="paddle.jpg" width="160" height="120" alt="iambic key"/>
+	  <input class="center" type="text" onkeydown="station.input.iambicKeydown(event)" onkeyup="station.input.iambicKeyup(event)"
+		 id="iambic" onfocus="station.input.iambicFocus()" onblur="station.input.iambicBlur()"><br/>
+	</form>
+      </div>
+    </div>
+  </input>
+  </body>
+</html>
+
+
