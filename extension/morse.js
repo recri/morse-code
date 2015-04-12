@@ -131,7 +131,7 @@ function morse_code_table() {
 		':' : '---...', ';' : '-.-.-.', '=' : '-...-', '?' : '..--..', '@' : '.--.-.',
 		'A' : '.-', 'B' : '-...', 'C' : '-.-.', 'D' : '-..', 'E' : '.', 'F' : '..-.', 'G' : '--.', 'H' : '....', 'I' : '..', 'J' : '.---', 'K' : '-.-',
 		'L' : '.-..', 'M' : '--', 'N' : '-.', 'O' : '---', 'P' : '.--.', 'Q' : '--.-', 'R' : '.-.', 'S' : '...', 'T' : '-', 'U' : '..-', 'V' : '...-',
-		'W' : '.--', 'X' : '-..-', 'Y' : '-.--', 'Z' : '--..', '_' : '..--.-' },
+		'W' : '.--', 'X' : '-..-', 'Y' : '-.--', 'Z' : '--..', '_' : '..--.-', },
 	    'wabun' : {
 		"\u30a2" : '--.--', "\u30ab" : '.-..', "\u30b5" : '-.-.-', "\u30bf" : '-.', "\u30ca" : '.-.', "\u30cf" : '-...',
 		"\u30de" : '-..-', "\u30e4" : '.--', "\u30e9" : '...', "\u30ef" : '-.-', "\u25cc" : '..', "\u30a4" : '.-',
@@ -411,9 +411,8 @@ function morse_code_detone(context) {
 		time += filter.dtime;
 	    }
 	},
-	connect : function(node) {
-	    filter.scriptNode.connect(node)
-	},
+	connect : function(node) { filter.scriptNode.connect(node) },
+	getTarget : function() { return filter.scriptNode; },
     };
     filter.dtime = 1.0 / context.sampleRate;
     filter.scriptNode.onaudioprocess = filter.onAudioProcess;
@@ -430,7 +429,7 @@ function morse_code_detime(context) {
     */
     var detimer = {
 	wpm : 0,		/* float words per minute */
-	word : 0,		/* float dits per word */
+	word : 50,		/* float dits per word */
 	estimate : 0,		/* float estimated dot clock period */
 	time : 0,		/* float time of last event */
 	n_dit : 1,		/* unsigned number of dits estimated */
@@ -441,7 +440,7 @@ function morse_code_detime(context) {
 
 	configure : function(wpm, word) {
 	    detimer.wpm = wpm > 0 ? wpm : 15;
-	    detimer.word = word > 0 ? word : 50;
+	    detimer.word = 50;
 	    detimer.estimate = (context.sampleRate * 60) / (detimer.wpm * detimer.word);
 	},
 
@@ -875,19 +874,11 @@ function morse_code_station() {
 	input_detimer : morse_code_detime(context),
 	input_decoder : morse_code_decode(context),
     };
-    var table = station.output.table;
 
-    station.output.setWPM(20);
-    station.output.setPitch(650);
     station.output.connect(context.destination);
     station.output.player.setTransitionConsumer(station.output_detimer);
 
     station.output_detimer.setElementConsumer(station.output_decoder);
-
-    station.input.straight.setPitch(550);
-
-    station.input.iambic.setWPM(20);
-    station.input.iambic.setPitch(550);
 
     station.input.connect(context.destination);
 
@@ -896,6 +887,7 @@ function morse_code_station() {
 
     station.input_detimer.setElementConsumer(station.input_decoder);
 
+    var table = station.output.table;
     station.output_decoder.table = table;
     station.input_decoder.table = table;
 

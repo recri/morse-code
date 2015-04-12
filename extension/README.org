@@ -1,25 +1,27 @@
 * morse code for chrome
   This is an implementation of several morse code functions that runs
   inside the Chrome browser with no native code extensions required.
-
-  It's main purpose is to train me to copy and key morse code at useful
-  speeds.  To do this it needs to send and to receive morse code, so it
-  can send me examples, which I must recognize and remember long enough
-  to send back, so it can compare what I sent back to the original message.
-
-  To these ends:
-  * it translates text into morse code and sends the code as a keyed oscillator;
-  * it reads keyup/keydown events and translates them into a keyed oscillator;
-  * it translates keyed oscillator events back into morse code and text;
-  * it generates arbitrary tests.
-
-* the functions implemented
+  Try [[http://rawgit.com/recri/morse-code/master/extension/morse.html]].
+* the files in this directory
+** README.org - documentation
+** midl.html - test bed for midi input, not implemented
+** midi.js - test bed for midi input, not implemented
+** morse.html - demo morse code page
+** morse.js - demo morse code implementation
+** paddle.jpg - image of an iambic paddle
+** straight.jpg - image of a straight key
+* the demo page
+* the functions implemented in morse.js
+  The (context) argument passed to most of the constructors is an Web Audio context
+  as described in https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API.
 ** morse_code_table() - constructor for a morse code translation table
    Morse code is represented as character strings consisting of:
    * '.' the period or full stop representing a 'dit'
    * '-' the hyphen representing a 'dah'
    * ' ' the space representing the space between characters
    * '  ' the doubled space representing the space between words
+   The table implements a forward and reverse translation, and a
+   transliteration function for the non-roman alphabets and kana.
 #+BEGIN_EXAMPLE
    	// create a morse code translation table
 	var table = morse_code_table();
@@ -35,6 +37,7 @@
         var roman = table.transliterate('string');
 #+END_EXAMPLE
 ** morse_code_player(context) - constructor for morse code player
+   The player implements a keyed sidetone.
 #+BEGIN_EXAMPLE
 	// create a morse code player
 	var player = morse_code_player(audioContext);
@@ -56,30 +59,141 @@
 	player.offAt(time);
 	// hold the current on/off state for a time
 	player.holdFor(time);
+	// get the latest time programmed for onAt, offAt, or holdFor
+	player.getCursor();
+	// cancel all programmed sounds
+	player.cancel();
 	// set the transition event consumer for the player
 	player.setTransitionConsumer(transitionConsumerFunction);
 #+END_EXAMPLE
 ** morse_code_output(context) - constructor for morse code output
+   The output translates text into keyed sidetone.
 #+BEGIN_EXAMPLE
-#+END_EXAMPLE
-** morse_code_iambic_keyer(context) - constructor for morse code iambic keyer
-#+BEGIN_EXAMPLE
-#+END_EXAMPLE
-** morse_code_straight_keyer(context) - constructor for morse code straight keyer
-#+BEGIN_EXAMPLE
-#+END_EXAMPLE
-** morse_code_iambic_input(context) - constructor for morse code input
-#+BEGIN_EXAMPLE
+	// create a morse code output
+	var output = morse_code_output(context);
+	// set the output speed words/minute
+	output.setWPM(wpm);
+	// send a string of text in morse code
+	output.send(string);
+	// many methods delegated to the player
+	// setPitch, setGain, setOnTime, setOffTime, connect,
+	// onAt, offAt, holdFor, getCursor, cancel
 #+END_EXAMPLE
 ** morse_code_detone(context) - constructor for morse code tone to key event decoder
+   Would track the power of a tone at specified pitch and bandwidth, but doesn't work
 #+BEGIN_EXAMPLE
+	// create a morse code detoner
+	var detone = morse_code_detone(context);
+	// specify the center frequency and bandwidth
+	detone.setCenterAndBandwidth(center, bandwidth);
+	// set the transition consumer for the detoner
+	detone.setTransitionConsumer(transitionConsumerFunction);
+	// connect the detoner to its output target
+	detone.connect(target);
+	// get the target node for the detoner
+	source.connect(detone.getTarget());
 #+END_EXAMPLE
 ** morse_code_detime(context) - constructor for morse code key event to morse decoder
+   Tracks the on/off transitions to deduce the words/minute and translate to dits, dahs, and spaces.
+   Needs to be set as the transition consumer of a morse code player or morse code detoner.
 #+BEGIN_EXAMPLE
+	// create a morse code detimer
+	var detimer = morse_code_detimer(context);
+	// configure for initial estimate of words/minute 
+	configure(wpm);
+	// set the element consumer for the detimer
+	detimer.setElementConsumer(elementConsumerFunction);
+	// make this the transition consumer of a source
+	source.setTransitionConsumer(detimer.transition);
 #+END_EXAMPLE
 ** morse_code_decode(context) - constructor for morse code to text decoder
+   Run as an element consumer and decode element sequences into text.
 #+BEGIN_EXAMPLE
+	// create a morse code decoder
+	var decoder = morse_code_decode(context);
+	// set the morse code table
+	decoder.table = table;
+	// set the decoder letter consumer
+	setLetterConsumer(letterConsumerFunction);
+	// make this decoder the element consumer of a source
+	source.setElementConsumer(decoder.element);
 #+END_EXAMPLE
-** morse_code_station(context) -
+** morse_code_iambic_keyer(context) - constructor for morse code iambic keyer
+   Sample the state of dit and dah paddles and generate morse code.
 #+BEGIN_EXAMPLE
+	// create an iambic keyer
+	var keyer = morse_code_iambic_keyer(context);
+	// clock the keyer, supply current dit and dah paddle states
+	// and the time since the last call to clock
+	keyer.clock(raw_dit_on, raw_dah_on, ticks);
+	// set the words per minute generated
+	keyer.setWpm(wpm);
+	// get the words per minute
+	keyer.getWpm();
+	// swap the dit and dah paddles
+	keyer.setSwapped(swapped);
+	// get the swapped state
+	keyer.getSwapped();
+	// set the dah length in dits (3.0 default)
+	keyer.setDah(dahLen);
+	// get the dah length in dits
+	keyer.getDah();
+	// set the inter-element length in dits (1.0 default)
+	keyer.setIes((iesLen);
+	// get the inter-element length in dits
+	kyer.getIes();
+#+END_EXAMPLE
+** morse_code_straight_input(context) - constructor for morse code straight key input
+#+BEGIN_EXAMPLE
+	// create a morse code straight key input
+	var straight = morse_code_straight_input(context);
+	// methods delegated to player: setPitch, setGain, setOnTime, setOffTime, connect
+	// input element onFocus handler
+	// onfocus="straight.onFocus()"
+	// input element onblur handler
+	// onblur="straight.onBlur()"
+	// input element onkeydown handler
+	// onkeydown="straight.onKeydown(event)"
+	// input element onkeyup handler
+	// onkeyup="straight.onKeyup(event)}	
+p#+END_EXAMPLE
+** morse_code_iambic_input(context) - constructor for morse code iambic key input
+#+BEGIN_EXAMPLE
+	// create a morse code iambic input
+	var iambic = morse_code_iambic_input(context);
+	// methods delegated to player: setPitch, setGain, setOnTime, setOffTime, connect
+	// methods delegated to iambic keyer: setWPM, setDah, setIes
+	// input element onFocus handler
+	// onfocus="iambic.onFocus()"
+	// input element onblur handler
+	// onblur="iambic.onBlur()"
+	// input element onkeydown handler
+	// onkeydown="iambic.onKeydown(event)"
+	// input element onkeyup handler
+	// onkeyup="iambic.onKeyup(event)}	
+#+END_EXAMPLE
+** morse_code_input(context) -
+   This is an input shim to support input elements for a straight key and an iambic key on the same page.
+#+BEGIN_EXAMPLE
+	// create a morse code input
+	var input = morse_code_input(context);
+	// connect the input to audio sink
+	input.connect(target);
+#+END_EXAMPLE
+** morse_code_station(context) - constructor for a "station"
+#+BEGIN_EXAMPLE
+	// create a morse code station
+	var station - morse_code_station(context);
+	// get the station output generator
+	var output = station.output;
+	// get the station output detimer
+	var output_detimer = station.output_detimer;
+	// get the station output decoder
+	var output_decoder = station.output_decoder;
+	// get the station input
+	var input = station.input;
+	// get the station input detimer
+	var input_detimer = station.input_detimer;
+	// get the station input decoder
+	var input_decoder = station.input_decoder;
 #+END_EXAMPLE
