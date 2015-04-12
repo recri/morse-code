@@ -46,16 +46,24 @@
 	val.innerHTML = value;
 	if (name.endsWith('pitch')) {
 	  val.innerHTML += " Hz";
+          inp.onchange = function() {
+	    val.innerHTML = ""+inp.value+" Hz";
+            target(inp.value)
+	  }
 	} else if (name.endsWith('speed')) {
 	  val.innerHTML += " WPM";
+          inp.onchange = function() {
+	    val.innerHTML = ""+inp.value+" WPM";
+            target(inp.value)
+	  }
 	}
       };
       function onLoadHandler() {
-	slider('straight_pitch', '220', '1760', '550', 'station.input.straight');
-	slider('output_pitch', '220', '1760', '550', 'station.output');
-	slider('output_speed', '5', '30', '15', 'station.output');
-	slider('iambic_pitch', '220', '1760', '550', 'station.input.iambic');
-	slider('iambic_speed', '5', '30', '15', 'station.input.iambic');
+	slider('straight_pitch', '220', '1760', '550', station.input.straight.setPitch);
+	slider('output_pitch', '220', '1760', '550', station.output.setPItch);
+	slider('output_speed', '5', '30', '15', station.output.setWPM);
+	slider('iambic_pitch', '220', '1760', '550', station.input.iambic.setPitch);
+	slider('iambic_speed', '5', '30', '15', station.input.iambic.setWPM);
       };
     </script>
     <style>
@@ -97,15 +105,15 @@
 	<h1>Morse Code Demo</h1>
 	<div class="left">
 	  <h2>Straight Key</h2>
-	  <img src="straight.jpg" width="160px" height="120px" alt="straight key"/><br/>
-	  <input id="straight" class="center" type="text" onkeydown="station.input.straight.onKeydown(event)" onkeyup="station.input.straight.onKeyup(event)"
-	         onfocus="station.input.straight.onFocus()" onblur="station.input.straight.onBlur()" /><br/>
+	  <input id="straight" type="image" src="straight.jpg" width="160px" height="120px" alt="straight key"
+		 onkeydown="station.input.straight.onKeydown(event)" onkeyup="station.input.straight.onKeyup(event)"
+	         onfocus="station.input.straight.onFocus()" onblur="station.input.straight.onBlur()"></input>
 	</div>
 	<div class="right">
 	  <h2>Iambic Key</h2>
-	  <img src="paddle.jpg" width="160px" height="120px" alt="iambic key"/>
-	  <input id="iambic" class="center" type="text" onkeydown="station.input.iambic.onKeydown(event)" onkeyup="station.input.iambic.onKeyup(event)"
-	         onfocus="station.input.iambic.onFocus()" onblur="station.input.iambic.onBlur()" ><br/>
+	  <input id="iambic" type="image" src="paddle.jpg" width="160px" height="120px" alt="iambic key"
+		 onkeydown="station.input.iambic.onKeydown(event)" onkeyup="station.input.iambic.onKeyup(event)"
+	         onfocus="station.input.iambic.onFocus()" onblur="station.input.iambic.onBlur()"></input>
 	</div>
       </div>
       <div class="center">
