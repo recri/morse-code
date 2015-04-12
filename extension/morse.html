@@ -3,48 +3,135 @@
   <head>
     <title>Morse Code Library</title>
   </head>
-  <body>
+  <body onload="onLoadHandler()">
     <script type="text/javascript" src="morse.js"></script>
     <script type="text/javascript">
+      if (!String.prototype.endsWith) {
+	String.prototype.endsWith = function(searchString, position) {
+		var subjectString = this.toString();
+		if (position === undefined || position > subjectString.length) {
+			position = subjectString.length;
+		}
+		position -= searchString.length;
+		var lastIndex = subjectString.indexOf(searchString, position);
+		return lastIndex !== -1 && lastIndex === position;
+	};
+      }
+    </script>
+    <script type="text/javascript">
       var station = morse_code_station();
-      station.input.setWPM(15);
-      station.output.setWPM(15);
+      station.input_decoder.setLetterConsumer(function(ltr, code) {
+        var elt = document.getElementById("inputtext");
+        elt.textContent += ltr;
+        elt.scrollTop = 1000;
+      });
+      station.output_decoder.setLetterConsumer(function(ltr, code) {
+        var elt = document.getElementById("outputtext");
+        elt.textContent += ltr;
+        elt.scrollTop = 1000;
+      });
+      function slider(name, min, max, value, target) {
+        // console.log("slider("+name+")");
+        var inputname = name+"_input";
+        var valuename = name+"_value";
+        var inp = '<input id="'+inputname+'"></input>';
+        var val = '<span id="'+valuename+'"></span>';
+	document.getElementById(name).innerHTML = inp+"<br/>"+val;
+        inp = document.getElementById(inputname);
+	val = document.getElementById(valuename);
+        inp.type = "range";
+	inp.min = min;
+	inp.max = max;
+	inp.value = value;
+	val.innerHTML = value;
+	if (name.endsWith('pitch')) {
+	  val.innerHTML += " Hz";
+	} else if (name.endsWith('speed')) {
+	  val.innerHTML += " WPM";
+	}
+      };
+      function onLoadHandler() {
+	slider('straight_pitch', '220', '1760', '550', 'station.input.straight');
+	slider('output_pitch', '220', '1760', '550', 'station.output');
+	slider('output_speed', '5', '30', '15', 'station.output');
+	slider('iambic_pitch', '220', '1760', '550', 'station.input.iambic');
+	slider('iambic_speed', '5', '30', '15', 'station.input.iambic');
+      };
     </script>
     <style>
+      .page {
+	margin-left: auto;
+	margin-right: auto;
+        text-align: center;
+	width: 50%;
+      }
       .center {
 	margin-left: auto;
 	margin-right: auto;
-	width: 50%;
-	background-color: #c0c0c0;
+	width: 100%;
+        text-align: center;
       }
       .right {
 	float: right;
-	width: 200px;
-	background-color: #b0e0e6;
+	width: 50%;
+        text-align: center;
       }
       .left {
 	float: left;
-	width: 200px;
-	background-color: #b0e0e6;
+	width: 50%;
+        text-align: center;
       }
-      h1 {
-	text-align: center;
+      #inputtext, #outputtext {
+	height:120px;
+	width:100%;
+	border:1px solid #ccc;
+	font:16px/26px Georgia, Garamond, Serif;
+	overflow:auto;
       }
-      input {
-	text-align: center;
-      }
+      .column-left { float: left; width: 33%; }
+      .column-right { float: right; width: 33%; }
+      .column-center { display: inline-block; width: 33%; }
     </style>
-    <div class="center">
-      <h1>Learn Morse Code</h1>
-      <div class="left">
-	<img src="straight.jpg" width="160" height="120" alt="straight key"/>
-	<input class="center" type="text" onkeydown="station.input.straightKeydown(event)" onkeyup="station.input.straightKeyup(event)"
-		  id="straight" onfocus="station.input.straightFocus()" onblur="station.input.straightBlur()"><br/>
+    <div class="page">
+      <div class="center">
+	<h1>Morse Code Demo</h1>
+	<div class="left">
+	  <h2>Straight Key</h2>
+	  <img src="straight.jpg" width="160px" height="120px" alt="straight key"/><br/>
+	  <input id="straight" class="center" type="text" onkeydown="station.input.straight.onKeydown(event)" onkeyup="station.input.straight.onKeyup(event)"
+	         onfocus="station.input.straight.onFocus()" onblur="station.input.straight.onBlur()" /><br/>
+	</div>
+	<div class="right">
+	  <h2>Iambic Key</h2>
+	  <img src="paddle.jpg" width="160px" height="120px" alt="iambic key"/>
+	  <input id="iambic" class="center" type="text" onkeydown="station.input.iambic.onKeydown(event)" onkeyup="station.input.iambic.onKeyup(event)"
+	         onfocus="station.input.iambic.onFocus()" onblur="station.input.iambic.onBlur()" ><br/>
+	</div>
       </div>
-      <div class="right">
-	<img src="paddle.jpg" width="160" height="120" alt="iambic key"/>
-	<input class="center" type="text" onkeydown="station.input.iambicKeydown(event)" onkeyup="station.input.iambicKeyup(event)"
-	       id="iambic" onfocus="station.input.iambicFocus()" onblur="station.input.iambicBlur()"><br/>
+      <div class="center">
+	<h2>Input Text</h2>
+	<div id="inputtext" class="center"></div>
+      </div>
+      <div class="center">
+	<h2>Output Text</h2>
+	<div id="outputtext" class="center"></div>
+      </div>
+      <div class="center">
+	<h2>Parameters</h2>
+	<div class="column-left">
+	  <h3>Straight Key</h3>
+	  <div id="straight_pitch"></div>
+	</div>
+	<div class="column-center">
+	  <h3>Output</h3>
+	  <div id="output_pitch"></div>
+	  <div id="output_speed"></div>
+	</div>
+	<div class="column-right">
+	  <h3>Iambic Key</h3>
+	  <div id="iambic_pitch"></div>
+	  <div id="iambic_speed"></div>
+	</div>
       </div>
     </div>
   </input>
