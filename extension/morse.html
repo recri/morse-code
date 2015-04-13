@@ -143,23 +143,24 @@
       }
       .tabbed_menu li {
 	display: inline;
-	border: solid;
+	border: solid #bbb;
 	border-width: 1px 1px 0 1px;
 	margin: 0 0.5em 0 0;
         font-size: 1.5em;
         font-weight: bold;
-      }
-      .tabbed_menu li.selected {
-	padding-bottom: 2px; 
-	background: white;
-      }
-      .tabbed_menu li a {
+      
 	text-decoration: none;
-        color: black;
+        color: #bbb;
         background: #eee;
 	padding: 0 1em;
+      
+        cursor: pointer;
       }
-      .tabbed_menu .selected a {
+      .tabbed_menu li.selected {
+	border: solid black;
+	border-width: 1px 1px 0 1px;
+	padding-bottom: 2px; 
+        color: black;
 	background: white;
       }
       .tabbed_menu .tab_content {
@@ -170,7 +171,9 @@
 	border: 1px solid;
         display: block;
       }
-
+      #about_content, #training_content {
+	text-align: left;
+      }
     </style>
     <div class="page">
       <div class="center">
@@ -202,11 +205,20 @@
       </div>
       <div class="tabbed_menu">
 	<ul>
-	  <li id="about_tab"><a href="#" onclick="tab_select('about')">About</a></li>
-	  <li id="configure_tab"><a href="#" onclick="tab_select('configure')">Configure</a></li>
-	  <li id="training_tab"><a href="#" onclick="tab_select('training')">Training</a></li>
+	  <li id="about_tab" onclick="tab_select('about')">About</li>
+	  <li id="configure_tab" onclick="tab_select('configure')">Configure</li>
+	  <li id="training_tab" onclick="tab_select('training')">Training</li>
 	</ul>
 	<div id="about_content" class="tab_content">
+	  <p>
+	    This page demonstrates a collection of javascript, html, and css for generating morse code.
+	    Click on one of the pictures above and the keys of your keyboard will operate the telegraph key selected.
+	    The keys that do not auto repeat will work best.
+	  </p><p>
+	    The project is hosted at <a href="http://github.com/recri/morse-code">http://github.com/recri/morse-code</a>.
+	    The project is licensed under the terms of the GNU GPL version 2.0.
+	    The project is copyright &copy; 2015 by Roger E Critchlow Jr, Santa Fe, New Mexico, USA.
+	  </p>
 	</div>
 	<div id="configure_content" class="tab_content">
 	  <div class="column-3-left">
@@ -228,6 +240,7 @@
 	  </div>
 	</div>
 	<div id="training_content" class="tab_content">
+	  <p>This section will control a variety of training games.</p>
 	</div>
       </div>
     </div>
