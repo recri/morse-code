@@ -34,6 +34,8 @@ function morse_code_table() {
 	trans: null,
 	// the object dictionary used to decode morse back to unicode
 	invert: null,
+	// the object dictionary of dit lengths for each character
+	dits: null,
 	// encode the string into dit, dah, and space
 	// dit is a period, dah is a hyphen, space is a space that represents
 	// a nominal 2 dit clocks of space which is added to the 1 dit clock of space
@@ -73,6 +75,22 @@ function morse_code_table() {
 	    }
 	    return result.join('');
 	},
+	// compute the dit length of a string
+	ditLength : function(string) {
+	    var result = 0;
+	    if (table.dits) {
+		for (var i = 0; i < string.length; i += 1) {
+		    var c = string.charAt(i).toUpperCase();
+		    if (table.code[c]) {
+			result += table.dits[c];
+			result += 2;
+		    } else if (c == ' ') {
+			result += 4;
+		    }
+		}
+	    }
+	    return result;
+	},
 	// select the code to use
 	setName: function(name) {
 	    if (table.name != name) {
@@ -81,8 +99,18 @@ function morse_code_table() {
 		    table.code = table.codes[name];
 		    table.trans = table.transliterations[name];
 		    table.invert = {};
+		    table.dits = {}
 		    // problem with multiple translations?
-		    for (var i in table.code) table.invert[table.code[i]] = i;
+		    for (var i in table.code) {
+			var code = table.code[i];
+			table.invert[code] = i; // deal with multiple letters sharing codes
+			table.dits[i] = 0
+			for (var j = 0; j < code.length; j += 1) {
+			    var c = code.charAt(j);
+			    if (c == '.') table.dits[i] += 2;
+			    else table.dits[i] += 4;
+			}
+		    }
 		}
 	    }
 	},
