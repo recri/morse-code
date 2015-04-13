@@ -74,6 +74,19 @@
 	inp.value = value;
         inp.onchange();
       };
+      function tab_select(prefix) {
+	console.log("tab_select("+prefix+")");
+        var prefixes = ["about", "configure", "training"];
+        for (var i in prefixes) {
+          var p = prefixes[i]
+          var tab = document.getElementById(p+"_tab");
+	  var content = document.getElementById(p+"_content");
+          console.log("before "+p+" tab.className="+tab.className+" and content.className="+content.className);
+	  tab.className = (prefix == p) ? "selected" : "";
+          content.className =  (prefix == p) ? "tab_content_selected" : "tab_content";
+          console.log("after "+p+" tab.className="+tab.className+" and content.className="+content.className);
+        }
+      }
       function onLoadHandler() {
 	slider("straight_pitch", "220", "1760", "550", station.input.straight.setPitch);
 	slider("straight_gain", "-60", "0", "-24", station.input.straight.setGain);
@@ -83,6 +96,7 @@
 	slider("iambic_pitch", "220", "1760", "650", station.input.iambic.setPitch);
 	slider("iambic_speed", "5", "30", "15", station.input.iambic.setWPM);
 	slider("iambic_gain", "-60", "0", "-24", station.input.iambic.setGain);
+        tab_select("configure");
       };
     </script>
     <style>
@@ -118,6 +132,45 @@
       .column-3-left { float: left; width: 33%; }
       .column-3-right { float: right; width: 33%; }
       .column-3-center { display: inline-block; width: 33%; }
+      .tabbed_menu {
+	margin.top: 100px;
+      }
+      .tabbed_menu ul {
+        text-align: left;
+	list-style: none;
+	padding:0;
+	margin:0;
+      }
+      .tabbed_menu li {
+	display: inline;
+	border: solid;
+	border-width: 1px 1px 0 1px;
+	margin: 0 0.5em 0 0;
+        font-size: 1.5em;
+        font-weight: bold;
+      }
+      .tabbed_menu li.selected {
+	padding-bottom: 2px; 
+	background: white;
+      }
+      .tabbed_menu li a {
+	text-decoration: none;
+        color: black;
+        background: #eee;
+	padding: 0 1em;
+      }
+      .tabbed_menu .selected a {
+	background: white;
+      }
+      .tabbed_menu .tab_content {
+	border: 1px solid;
+        display: none;
+      }
+      .tabbed_menu .tab_content_selected {
+	border: 1px solid;
+        display: block;
+      }
+
     </style>
     <div class="page">
       <div class="center">
@@ -137,33 +190,44 @@
       </div>
       <div class="center">
 	<div class="column-2-left">
-	  <h3>Output Text</h3>
+	  <h2>Output Text</h2>
 	  <div id="output_text" class="center"></div>
 	  <button onclick="document.getElementById('output_text').innerHTML = ''">Clear Output</button>
 	</div>
 	<div class="column-2-right">
-	  <h3>Input Text</h3>
+	  <h2>Input Text</h2>
 	  <div id="input_text" class="center"></div>
 	  <button onclick="document.getElementById('input_text').innerHTML = ''">Clear Input</button>
 	</div>
       </div>
-      <div class="center">
-	<div class="column-3-left">
-	  <h3>Straight Key</h3>
-	  <div id="straight_pitch"></div>
-	  <div id="straight_gain"></div>
+      <div class="tabbed_menu">
+	<ul>
+	  <li id="about_tab"><a href="#" onclick="tab_select('about')">About</a></li>
+	  <li id="configure_tab"><a href="#" onclick="tab_select('configure')">Configure</a></li>
+	  <li id="training_tab"><a href="#" onclick="tab_select('training')">Training</a></li>
+	</ul>
+	<div id="about_content" class="tab_content">
 	</div>
-	<div class="column-3-center">
-	  <h3>Output</h3>
-	  <div id="output_pitch"></div>
-	  <div id="output_speed"></div>
-	  <div id="output_gain"></div>
+	<div id="configure_content" class="tab_content">
+	  <div class="column-3-left">
+	    <h3>Straight Key</h3>
+	    <div id="straight_pitch"></div>
+	    <div id="straight_gain"></div>
+	  </div>
+	  <div class="column-3-center">
+	    <h3>Output</h3>
+	    <div id="output_pitch"></div>
+	    <div id="output_speed"></div>
+	    <div id="output_gain"></div>
+	  </div>
+	  <div class="column-3-right">
+	    <h3>Iambic Key</h3>
+	    <div id="iambic_pitch"></div>
+	    <div id="iambic_speed"></div>
+	    <div id="iambic_gain"></div>
+	  </div>
 	</div>
-	<div class="column-3-right">
-	  <h3>Iambic Key</h3>
-	  <div id="iambic_pitch"></div>
-	  <div id="iambic_speed"></div>
-	  <div id="iambic_gain"></div>
+	<div id="training_content" class="tab_content">
 	</div>
       </div>
     </div>
