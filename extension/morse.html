@@ -7,19 +7,6 @@
     <script type="text/javascript" src="morse.js"></script>
     <script type="text/javascript" src="words.js"></script>
     <script type="text/javascript">
-      if (!String.prototype.endsWith) {
-	String.prototype.endsWith = function(searchString, position) {
-		var subjectString = this.toString();
-		if (position === undefined || position > subjectString.length) {
-			position = subjectString.length;
-		}
-		position -= searchString.length;
-		var lastIndex = subjectString.indexOf(searchString, position);
-		return lastIndex !== -1 && lastIndex === position;
-	};
-      }
-    </script>
-    <script type="text/javascript">
       var station = morse_code_station();
       station.input_decoder.setLetterConsumer(function(ltr, code) {
         var elt = document.getElementById("input_text");
@@ -31,7 +18,7 @@
         elt.textContent += ltr;
         elt.scrollTop = 1000;
       });
-      function slider(name, min, max, value, target) {
+      function slider(name, min, max, value, units, target) {
         // console.log("slider("+name+")");
         var inputname = name+"_input";
         var valuename = name+"_value";
@@ -41,61 +28,40 @@
         inp.type = "range";
 	inp.min = min;
 	inp.max = max;
-	if (name.endsWith('pitch')) {
-          inp.onchange = function() {
-	    val.innerHTML = ""+inp.value+" Hz";
-            target(inp.value)
-	  }
-	} else if (name.endsWith('speed')) {
-          inp.onchange = function() {
-	    val.innerHTML = ""+inp.value+" WPM";
-            target(inp.value)
-	  }
-	} else if (name.endsWith('gain')) {
-	  inp.onchange = function() {
-	    val.innerHTML = ""+inp.value+" dB";
-            target(Math.pow(10, inp.value/20));
-          }
-        } else if (name.endsWith('time')) {
-	  inp.onchange = function() {
-	    val.innerHTML = ""+inp.value+" sec";
-            target(inp.val);
-          }
-        } else if (name.endsWith('dit')) {
-	  inp.onchange = function() {
-	    val.innerHTML = ""+inp.value+" dit";
-            target(inp.val);
+        var target_value = inp.value;
+	if (units == "dB") {
+          inp.oninput = inp.onchange = function() {
+            val.innerHTML = ""+inp.value+" "+units;
+	    target(Math.pow(10, inp.value/20))
           }
         } else {
-	  console.log("unknown slider name: "+name);
-          return;
+          inp.oninput = inp.onchange = function() {
+            val.innerHTML = ""+inp.value+" "+units;
+	    target(inp.value)
+          }
         }
-        inp.oninput = inp.onchange;
 	inp.value = value;
         inp.onchange();
       };
       function tab_select(prefix) {
-	console.log("tab_select("+prefix+")");
         var prefixes = ["about", "configure", "training"];
         for (var i in prefixes) {
           var p = prefixes[i]
           var tab = document.getElementById(p+"_tab");
 	  var content = document.getElementById(p+"_content");
-          console.log("before "+p+" tab.className="+tab.className+" and content.className="+content.className);
 	  tab.className = (prefix == p) ? "selected" : "";
           content.className =  (prefix == p) ? "tab_content_selected" : "tab_content";
-          console.log("after "+p+" tab.className="+tab.className+" and content.className="+content.className);
         }
-      }
+      };
       function onLoadHandler() {
-	slider("straight_pitch", "220", "1760", "550", station.input.straight.setPitch);
-	slider("straight_gain", "-60", "0", "-24", station.input.straight.setGain);
-	slider("output_pitch", "220", "1760", "600", station.output.setPitch);
-	slider("output_speed", "5", "30", "15", station.output.setWPM);
-	slider("output_gain", "-60", "0", "-24", station.output.setGain);
-	slider("iambic_pitch", "220", "1760", "650", station.input.iambic.setPitch);
-	slider("iambic_speed", "5", "30", "15", station.input.iambic.setWPM);
-	slider("iambic_gain", "-60", "0", "-24", station.input.iambic.setGain);
+	slider("straight_pitch", "220", "1760", "550", "Hz", station.input.straight.setPitch);
+	slider("straight_gain", "-60", "0", "-24", "dB", station.input.straight.setGain);
+	slider("output_pitch", "220", "1760", "600", "Hz", station.output.setPitch);
+	slider("output_speed", "5", "30", "15", "WPM", station.output.setWPM);
+	slider("output_gain", "-60", "0", "-24", "dB", station.output.setGain);
+	slider("iambic_pitch", "220", "1760", "650", "Hz", station.input.iambic.setPitch);
+	slider("iambic_speed", "5", "30", "15", "WPM", station.input.iambic.setWPM);
+	slider("iambic_gain", "-60", "0", "-24", "dB", station.input.iambic.setGain);
         tab_select("configure");
       };
     </script>

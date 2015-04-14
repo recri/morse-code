@@ -227,41 +227,17 @@ function morse_code_player(context) {
 	oscillator : context.createOscillator(),
 	key : context.createGain(),
 	limit : context.createGain(),
-	onShape : null,		// key on ramp curve, see below
-	offShape : null,	// key off ramp curve, see below
 	pitch : 600,		// oscillator pitch
 	gain : 0.05,		// limit on gain
 	onTime : 0.004,		// key on ramp length in seconds
 	offTime : 0.004,	// key off ramp length in seconds
 	cursor : 0,		// next time
-	setPitch : function(hertz) {
-	    player.oscillator.frequency.value = hertz;
-	},
-	setGain : function(gain) {
-	    player.limit.gain.value = player.gain = Math.min(Math.max(gain, 0.001), 1.0);
-	},
-	setOnTime : function(seconds) {
-	    player.onTime = seconds || 0.004;
-	    var n = Math.ceil(context.sampleRate*player.onTime)+1;
-	    player.onShape = new Float32Array(n);
-	    for (var i = 0; i < n; i += 1) {
-		var t = Math.PI*(1+i/(n-1));
-		player.onShape[i] = (Math.cos(t)+1)/2;
-	    }
-	},
-	setOffTime : function(seconds) {
-	    player.offTime = seconds || 0.004;
-	    var n = Math.ceil(context.sampleRate*player.offTime)+1;
-	    player.offShape = new Float32Array(n);
-	    for (var i = 0; i < n; i += 1) {
-		var t = Math.PI*(i/(n-1));
-		player.offShape[i] = (Math.cos(t)+1)/2;
-	    }
-	},
+	setPitch : function(hertz) { player.oscillator.frequency.value = hertz; },
+	setGain : function(gain) { player.limit.gain.value = player.gain = Math.min(Math.max(gain, 0.001), 1.0); },
+	setOnTime : function(seconds) { player.onTime = seconds || 0.004; },
+	setOffTime : function(seconds) { player.offTime = seconds || 0.004; },
 	getCursor : function() { return player.cursor = Math.max(player.cursor, context.currentTime); },
-	connect : function(target) {
-	    player.limit.connect(target);
-	},
+	connect : function(target) { player.limit.connect(target); },
 	on : function() {
 	    player.cancel();
 	    player.onAt(context.currentTime);
@@ -271,26 +247,24 @@ function morse_code_player(context) {
 	    player.offAt(context.currentTime);
 	},
 	onAt : function(time) {
-	    player.key.gain.setValueCurveAtTime(player.onShape, time, player.onTime);
+	    player.key.gain.setValueAtTime(0.0, time);
+	    player.key.gain.linearRampToValueAtTime(1.0, time+player.onTime);
 	    player.cursor = time;
 	    player.transition(1);
 	},
 	offAt : function(time) {
-	    player.key.gain.setValueCurveAtTime(player.offShape, time, player.offTime);
+	    player.key.gain.setValueAtTime(1.0, time);
+	    player.key.gain.linearRampToValueAtTime(0.0, time+player.offTime);
 	    player.cursor = time;
 	    player.transition(0);
 	},
-	holdFor : function(seconds) {
-	    return player.cursor += seconds;
-	},
+	holdFor : function(seconds) { return player.cursor += seconds;	},
 	cancel : function() {
 	    player.key.gain.cancelScheduledValues(player.cursor = context.currentTime);
 	    player.key.gain.value = 0;
 	},
 	transitionConsumer : null,
-	setTransitionConsumer : function(transitionConsumer) {
-	    player.transitionConsumer = transitionConsumer;
-	},
+	setTransitionConsumer : function(transitionConsumer) { player.transitionConsumer = transitionConsumer; },
 	transition : function(onoff) {
 	    if (player.transitionConsumer) {
 		player.transitionConsumer.transition(onoff, player.cursor);
@@ -846,11 +820,13 @@ function morse_code_iambic_input(context) {
 	    var key = event.keyCode || event.which;
 	    if ((key&1)==0) iambic.raw_dit_on = true;
 	    else iambic.raw_dah_on = true;
+	    iambic.intervalFunction();
 	},
 	onKeyup : function(event) {
 	    var key = event.keyCode || event.which;
 	    if ((key&1)==0) iambic.raw_dit_on = false;
 	    else iambic.raw_dah_on = false;
+	    iambic.intervalFunction();
 	},
 	intervalLast : context.currentTime,
 	intervalFunction : function() {
