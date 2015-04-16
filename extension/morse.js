@@ -226,18 +226,17 @@ function morse_code_player(context) {
     var player = {
 	oscillator : context.createOscillator(),
 	key : context.createGain(),
-	limit : context.createGain(),
 	pitch : 600,		// oscillator pitch
 	gain : 0.05,		// limit on gain
 	onTime : 0.004,		// key on ramp length in seconds
 	offTime : 0.004,	// key off ramp length in seconds
 	cursor : 0,		// next time
 	setPitch : function(hertz) { player.oscillator.frequency.value = hertz; },
-	setGain : function(gain) { player.limit.gain.value = player.gain = Math.min(Math.max(gain, 0.001), 1.0); },
+	setGain : function(gain) { player.gain = Math.min(Math.max(gain, 0.001), 1.0); },
 	setOnTime : function(seconds) { player.onTime = seconds || 0.004; },
 	setOffTime : function(seconds) { player.offTime = seconds || 0.004; },
 	getCursor : function() { return player.cursor = Math.max(player.cursor, context.currentTime); },
-	connect : function(target) { player.limit.connect(target); },
+	connect : function(target) { player.key.connect(target); },
 	on : function() {
 	    player.cancel();
 	    player.onAt(context.currentTime);
@@ -248,12 +247,12 @@ function morse_code_player(context) {
 	},
 	onAt : function(time) {
 	    player.key.gain.setValueAtTime(0.0, time);
-	    player.key.gain.linearRampToValueAtTime(1.0, time+player.onTime);
+	    player.key.gain.linearRampToValueAtTime(player.gain, time+player.onTime);
 	    player.cursor = time;
 	    player.transition(1);
 	},
 	offAt : function(time) {
-	    player.key.gain.setValueAtTime(1.0, time);
+	    player.key.gain.setValueAtTime(player.gain, time);
 	    player.key.gain.linearRampToValueAtTime(0.0, time+player.offTime);
 	    player.cursor = time;
 	    player.transition(0);
@@ -266,26 +265,18 @@ function morse_code_player(context) {
 	transitionConsumer : null,
 	setTransitionConsumer : function(transitionConsumer) { player.transitionConsumer = transitionConsumer; },
 	transition : function(onoff) {
-	    if (player.transitionConsumer) {
-		player.transitionConsumer.transition(onoff, player.cursor);
-	    }
+	    if (player.transitionConsumer) player.transitionConsumer.transition(onoff, player.cursor);
 	},
 
     };
-    // define the raised cosine gain curve for the on shape
-    player.setOnTime(player.onTime);
-    // define the raised cosine gain curve for the off shape
-    player.setOffTime(player.offTime);
     // initialize the oscillator
     player.oscillator.type = 'sine';
     player.setPitch(player.pitch); // value in hertz
     player.oscillator.start();
     // initialize the gain
     player.key.gain.value = 0;
-    player.setGain(player.gain);
     // wire up the oscillator and gain nodes
     player.oscillator.connect(player.key);
-    player.key.connect(player.limit);
     return player;
 }
 
@@ -529,11 +520,11 @@ function morse_code_detime(context) {
 	setElementConsumer : function(elementConsumer) {
 	    detimer.elementConsumer = elementConsumer;
 	},
-	element : function(element) {
-	    if (detimer.elementConsumer) detimer.elementConsumer.element(element);
+	element : function(element, timeEnded) {
+	    if (detimer.elementConsumer) detimer.elementConsumer.element(element, timeEnded);
 	},
 	transition : function(onoff, time) {
-	    detimer.element(detimer.detime_process(onoff, time));
+	    detimer.element(detimer.detime_process(onoff, time), time);
 	},
     }
     detimer.configure(15, 50);	// this is part suggestion (15 wpm) and part routine (50 dits/word is PARIS)
@@ -554,7 +545,7 @@ function morse_code_decode(context) {
 		decoder.elements = [];
 	    }
 	},
-	element : function(elt) {
+	element : function(elt, timeEnded) {
 	    if (decoder.elementTimeout) {
 		clearTimeout(decoder.elementTimeout);
 		decoder.elementTimeout = null;
@@ -564,7 +555,7 @@ function morse_code_decode(context) {
 	    }
 	    if (elt == '.' || elt == '-') {
 		decoder.elements.push(elt);
-		decoder.elementTimeout = setTimeout(decoder.elementTimeoutFun, 250)
+		decoder.elementTimeout = setTimeout(decoder.elementTimeoutFun, 1000*(timeEnded-context.currentTime)+250)
 		return;
 	    }
 	    if (decoder.elements.length > 0) {
@@ -644,7 +635,13 @@ function morse_code_iambic_keyer(player) {
     var _iesLen = 1;		// dits per space between dits and dahs
 
     // update the clock computations
-    // for reference dit is 60ms at 20wpm, 40ms at 30wpm
+    // for reference a dit is
+    //		80ms at 15wpm
+    //		60ms at 20wpm
+    //		48ms at 25wpm
+    //		40ms at 30wpm
+    //		30ms at 40wpm
+    //		24ms at 50wpm
     function update() {
 	// second timing
 	_perDit = 60.0 / (_wpm * 50);
@@ -653,15 +650,20 @@ function morse_code_iambic_keyer(player) {
     }
 
     function transition(state, len) {
+	// mark the new state
 	keyer_state = state;
+	// reset the timer
 	if (timer < 0) timer = 0;
 	timer += len+_perIes;
+	// sound the element
 	var time = player.getCursor()
 	player.onAt(time);
 	player.offAt(time+len);
 	player.holdFor(_perIes);
     }
 
+    function make_dit() { transition(DIT, _perDit); }
+    function make_dah() { transition(DAH, _perDah); }
     var keyer = {
 	clock : function(raw_dit_on, raw_dah_on, ticks) {
 	    var dit_on = _swapped ? raw_dah_on : raw_dit_on;
@@ -669,23 +671,19 @@ function morse_code_iambic_keyer(player) {
 
 	    // update timer
 	    timer -= ticks;
-	    var timer_expired = timer <= _perIes/2; // decide next state after
+
 	    // keyer state machine   
 	    if (keyer_state == IDLE) {
-		if (dit_on) transition(DIT, _perDit);
-		else if (dah_on) transition(DAH, _perDah);
-	    } else if (keyer_state == DIT) {
-		if ( timer_expired ) {
-		    if ( dah_pending ) transition(DAH, _perDah);
-		    else if (dit_on) transition(DIT, _perDit);
-		    else if (dah_on) transition(DAH, _perDah);
+		if (dit_on) make_dit();
+		else if (dah_on) make_dah();
+	    } else if ( timer <= _perIes/2 ) {
+		if (keyer_state == DIT) {
+		    if ( dah_pending || dah_on ) make_dah();
+		    else if (dit_on) make_dit();
 		    else keyer_state = IDLE;
-		}
-	    } else if (keyer_state == DAH) {
-		if ( timer_expired ) {
-		    if ( dit_pending ) transition(DIT, _perDit);
-		    else if (dah_on) transition(DAH, _perDah);
-		    else if (dit_on) transition(DIT, _perDit);
+		} else if (keyer_state == DAH) {
+		    if ( dit_pending || dit_on ) make_dit();
+		    else if (dah_on) make_dah();
 		    else keyer_state = IDLE;
 		}
 	    }
@@ -701,12 +699,12 @@ function morse_code_iambic_keyer(player) {
 		(dah_on && keyer_state == DIT && timer < _perDit/2+_perIes);
 
 	},
-	// set the words per minute generated
-	setWpm : function(wpm) { _wpm = wpm; update(); },
-	getWpm : function() { return _wpm; },
 	// swap the dit and dah paddles
 	setSwapped : function(swapped) { _swapped = swapped; },
 	getSwapped : function() { return _swapped; },
+	// set the words per minute generated
+	setWpm : function(wpm) { _wpm = wpm; update(); },
+	getWpm : function() { return _wpm; },
 	// set the dah length in dits
 	setDah : function(dahLen) { _dahLen = dahLen; update(); },
 	getDah : function() { return _dahLen; },
@@ -714,10 +712,6 @@ function morse_code_iambic_keyer(player) {
 	setIes : function (iesLen) { _iesLen = iesLen; update(); },
 	getIes : function() { return _iesLen; }
     };
-    _wpm = 20;
-    _swapped = false;
-    _dahLen = 3;
-    _iesLen = 1;
     update();
     return keyer;
 }
