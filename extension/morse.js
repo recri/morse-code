@@ -589,12 +589,14 @@ function morse_code_decode(context) {
 }
 
 // translate iambic paddle events into keyup/keydown events
-function morse_code_iambic_keyer(context) {
+function morse_code_iambic_keyer(player) {
     /*
     ** This has been stripped down to the minimal iambic state machine
     ** from the AVR sources that accompany the article in QEX March/April
     ** 2012, and the length of the dah and inter-element-space has been
     ** made into configurable multiples of the dit clock.
+    **
+    ** And then, 
     */
     /*
      * newkeyer.c  an electronic keyer with programmable outputs 
@@ -621,16 +623,14 @@ function morse_code_iambic_keyer(context) {
 
     // keyer states
     var IDLE =     0;  // waiting for a paddle closure 
-    var DIT =      1;  // making a dit 
-    var DAH =      2;  // making a dah  
-    var DIT_DLY =  3;  // intersymbol delay, one dot time
-    var DAH_DLY =  4;  // intersymbol delay, one dot time
+    var DIT =      1;  // making a dit or the space after
+    var DAH =      2;  // making a dah or the space after
 
     // state variables
     var keyer_state = IDLE;	// the keyer state 
-    var dit_pending = false;	// memory for dits  
-    var dah_pending = false;	// memory for dahs  
-    var timer = 0;		// seconds counting down
+    var dit_pending = false;	// memory for dit seen while playing a dah
+    var dah_pending = false;	// memory for dah seen while playing a dit
+    var timer = 0;		// seconds counting down to next decision
 
     // seconds per feature
     var _perDit = 0;
@@ -644,6 +644,7 @@ function morse_code_iambic_keyer(context) {
     var _iesLen = 1;		// dits per space between dits and dahs
 
     // update the clock computations
+    // for reference dit is 60ms at 20wpm, 40ms at 30wpm
     function update() {
 	// second timing
 	_perDit = 60.0 / (_wpm * 50);
@@ -651,67 +652,54 @@ function morse_code_iambic_keyer(context) {
 	_perIes = _perDit * _iesLen;
     }
 
+    function transition(state, len) {
+	keyer_state = state;
+	if (timer < 0) timer = 0;
+	timer += len+_perIes;
+	var time = player.getCursor()
+	player.onAt(time);
+	player.offAt(time+len);
+	player.holdFor(_perIes);
+    }
+
     var keyer = {
 	clock : function(raw_dit_on, raw_dah_on, ticks) {
 	    var dit_on = _swapped ? raw_dah_on : raw_dit_on;
 	    var dah_on = _swapped ? raw_dit_on : raw_dah_on;
-	    var key_out = false;
 
 	    // update timer
 	    timer -= ticks;
-	    var timer_expired = timer <= 0;
-
+	    var timer_expired = timer <= _perIes/2; // decide next state after
 	    // keyer state machine   
 	    if (keyer_state == IDLE) {
-		key_out = false;
-		if (dit_on) {
-		    timer = _perDit; keyer_state = DIT;
-		} else if (dah_on) {
-		    timer = _perDah; keyer_state = DAH;
-		}
+		if (dit_on) transition(DIT, _perDit);
+		else if (dah_on) transition(DAH, _perDah);
 	    } else if (keyer_state == DIT) {
-		key_out = true; 
 		if ( timer_expired ) {
-		    timer = _perIes; keyer_state = DIT_DLY;
+		    if ( dah_pending ) transition(DAH, _perDah);
+		    else if (dit_on) transition(DIT, _perDit);
+		    else if (dah_on) transition(DAH, _perDah);
+		    else keyer_state = IDLE;
 		}
 	    } else if (keyer_state == DAH) {
-		key_out = true; 
 		if ( timer_expired ) {
-		    timer = _perIes; keyer_state = DAH_DLY;
-		}
-	    } else if (keyer_state == DIT_DLY) {
-		key_out = false;  
-		if ( timer_expired ) {
-		    if ( dah_pending ) {
-			timer = _perDah; keyer_state = DAH;
-		    } else {
-			keyer_state = IDLE;
-		    }
-		}
-	    } else if (keyer_state == DAH_DLY) {
-		key_out = false; 
-		if ( timer_expired ) {
-		    if ( dit_pending ) {
-			timer = _perDit; keyer_state = DIT;
-		    } else {
-			keyer_state = IDLE;
-		    }
+		    if ( dit_pending ) transition(DIT, _perDit);
+		    else if (dah_on) transition(DAH, _perDah);
+		    else if (dit_on) transition(DIT, _perDit);
+		    else keyer_state = IDLE;
 		}
 	    }
 	    
 	    //*****************  dit pending state machine   *********************
 	    dit_pending = dit_pending ?
 		keyer_state != DIT :
-		(dit_on && ((keyer_state == DAH && timer < _perDah/3) ||
-			    (keyer_state == DAH_DLY && timer > _perIes/2)));
+		(dit_on && keyer_state == DAH && timer < _perDah/3+_perIes);
             
 	    //******************  dah pending state machine   *********************
 	    dah_pending = dah_pending ?
 		keyer_state != DAH :
-		(dah_on && ((keyer_state == DIT && timer < _perDit/2) ||
-			    (keyer_state == DIT_DLY && timer > _perIes/2)));
-	    
-	    return key_out;
+		(dah_on && keyer_state == DIT && timer < _perDit/2+_perIes);
+
 	},
 	// set the words per minute generated
 	setWpm : function(wpm) { _wpm = wpm; update(); },
@@ -779,9 +767,10 @@ function morse_code_straight_input(context) {
 }
 
 function morse_code_iambic_input(context) {
+    var player = morse_code_player(context);
     var iambic = {
-	player : morse_code_player(context),
-	keyer : morse_code_iambic_keyer(context),
+	player : player,
+	keyer : morse_code_iambic_keyer(player),
 	setPitch : function(hertz) { iambic.player.setPitch(hertz); },
 	setGain : function(gain) { iambic.player.setGain(gain); },
 	setOnTime : function(seconds) { iambic.player.setOnTime(seconds); },
@@ -791,19 +780,6 @@ function morse_code_iambic_input(context) {
 	setDah : function(dah) { iambic.keyer.setDah(dah); },
 	setIes : function(ies) { iambic.keyer.setIes(ies); },
 
-	isOn : false,
-	on : function() {
-	    if ( ! iambic.isOn) {
-		iambic.player.onAt(iambic.player.getCursor());
-		iambic.isOn = true;
-	    }
-	},
-	off : function() {
-	    if (iambic.isOn) {
-		iambic.player.offAt(iambic.player.getCursor());
-		iambic.isOn = false;
-	    }
-	},
 	raw_dit_on : false,
 	raw_dah_on : false,
 	onFocus : function() {
@@ -814,7 +790,6 @@ function morse_code_iambic_input(context) {
 	    iambic.raw_dit_on = false;
 	    iambic.raw_dah_on = false;
 	    iambic.player.cancel();
-	    iambic.off();
 	},
 	onKeydown : function(event) {
 	    var key = event.keyCode || event.which;
@@ -834,9 +809,7 @@ function morse_code_iambic_input(context) {
 	    var tick = time - iambic.intervalLast;
 	    iambic.intervalLength = (iambic.intervalLength + tick) / 2;
 	    iambic.intervalLast = time;
-	    if (iambic.isOn != iambic.keyer.clock(iambic.raw_dit_on, iambic.raw_dah_on, tick)) {
-		if (iambic.isOn) { iambic.off(); } else { iambic.on(); }
-	    }
+	    iambic.keyer.clock(iambic.raw_dit_on, iambic.raw_dah_on, tick);
 	},
 	interval : null,
 	start : function() {
@@ -847,7 +820,6 @@ function morse_code_iambic_input(context) {
 	},
 	stop : function() {
 	    if (iambic.interval) {
-		iambic.off();
 		clearInterval(iambic.interval);
 		iambic.interval = null;
 	    }
