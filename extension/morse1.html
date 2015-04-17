@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Morse Code</title>
+  </head>
+  <body onload="onLoadHandler()">
+    <script type="text/javascript" src="morse.js"></script>
+    <script type="text/javascript" src="midi.js"></script>
+    <script type="text/javascript" src="words.js"></script>
+    <script type="text/javascript">
+      var station = morse_code_station();
+      station.input_decoder.setLetterConsumer(function(ltr, code) {
+        var elt = document.getElementById("input_text");
+        elt.textContent += ltr;
+        elt.scrollTop = 1000;
+      });
+      station.output_decoder.setLetterConsumer(function(ltr, code) {
+        var elt = document.getElementById("output_text");
+        elt.textContent += ltr;
+        elt.scrollTop = 1000;
+      });
+      function slider(name, min, max, value, units, target) {
+        // console.log("slider("+name+")");
+        var inputname = name+"_input";
+        var valuename = name+"_value";
+	document.getElementById(name).innerHTML = '<input id="'+inputname+'"/><br/><span id="'+valuename+'"/>';
+        var inp = document.getElementById(inputname);
+	var val = document.getElementById(valuename);
+        inp.type = "range";
+	inp.min = min;
+	inp.max = max;
+        var target_value = inp.value;
+	if (units == "dB") {
+          inp.oninput = inp.onchange = function() {
+            val.innerHTML = ""+inp.value+" "+units;
+	    target(Math.pow(10, inp.value/20))
+          }
+        } else {
+          inp.oninput = inp.onchange = function() {
+            val.innerHTML = ""+inp.value+" "+units;
+	    target(inp.value)
+          }
+        }
+	inp.value = value;
+        inp.onchange();
+      };
+      function tab_select(prefix) {
+        var prefixes = ["about", "configure", "training"];
+        for (var i in prefixes) {
+          var p = prefixes[i]
+          var tab = document.getElementById(p+"_tab");
+	  var content = document.getElementById(p+"_content");
+	  tab.className = (prefix == p) ? "selected" : "";
+          content.className =  (prefix == p) ? "tab_content_selected" : "tab_content";
+        }
+      };
+      function onLoadHandler() {
+	slider("straight_pitch", "220", "1760", "550", "Hz", station.input.straight.setPitch);
+	slider("straight_gain", "-60", "0", "-24", "dB", station.input.straight.setGain);
+	slider("output_pitch", "220", "1760", "600", "Hz", station.output.setPitch);
+	slider("output_speed", "5", "30", "15", "WPM", station.output.setWPM);
+	slider("output_gain", "-60", "0", "-24", "dB", station.output.setGain);
+	slider("iambic_pitch", "220", "1760", "650", "Hz", station.input.iambic.setPitch);
+	slider("iambic_speed", "5", "30", "15", "WPM", station.input.iambic.setWPM);
+	slider("iambic_gain", "-60", "0", "-24", "dB", station.input.iambic.setGain);
+        tab_select("configure");
+      };
+    </script>
+    <style>
+      .page {
+	margin-left: auto;
+	margin-right: auto;
+        text-align: center;
+	width: 50%;
+      }
+      .center {
+	margin-left: auto;
+	margin-right: auto;
+	width: 100%;
+        text-align: center;
+      }
+      .column-2-right {
+	float: right;
+	width: 50%;
+        text-align: center;
+      }
+      .column-2-left {
+	float: left;
+	width: 50%;
+        text-align: center;
+      }
+      #input_text, #output_text {
+	height:240px;
+	width:75%;
+	border:1px solid #ccc;
+	font:16px/26px Georgia, Garamond, Serif;
+	overflow:auto;
+      }
+      .column-3-left { float: left; width: 33%; }
+      .column-3-right { float: right; width: 33%; }
+      .column-3-center { display: inline-block; width: 33%; }
+      .tabbed_menu {
+	margin.top: 100px;
+      }
+      .tabbed_menu ul {
+        text-align: left;
+	list-style: none;
+	padding:0;
+	margin:0;
+      }
+      .tabbed_menu li {
+	display: inline;
+	border: solid #bbb;
+	border-width: 1px 1px 0 1px;
+	margin: 0 0.5em 0 0;
+        font-size: 1.5em;
+        font-weight: bold;
+      
+	text-decoration: none;
+        color: #bbb;
+        background: #eee;
+	padding: 0 1em;
+      
+        cursor: pointer;
+      }
+      .tabbed_menu li.selected {
+	border: solid black;
+	border-width: 1px 1px 0 1px;
+	padding-bottom: 2px; 
+        color: black;
+	background: white;
+      }
+      .tabbed_menu .tab_content {
+	border: 1px solid;
+        display: none;
+      }
+      .tabbed_menu .tab_content_selected {
+	border: 1px solid;
+        display: block;
+      }
+      #about_content, #training_content {
+	text-align: left;
+      }
+    </style>
+    <div class="page">
+      <div class="center">
+	<h1>Morse Code</h1>
+	<div class="column-2-left">
+	  <h2>Straight Key</h2>
+	  <input id="straight" type="image" src="straight2.jpg" width="160px" height="120px" alt="straight key"
+		 onkeydown="station.input.straight.onKeydown(event)" onkeyup="station.input.straight.onKeyup(event)"
+	         onfocus="station.input.straight.onFocus()" onblur="station.input.straight.onBlur()"></input>
+	</div>
+	<div class="column-2-right">
+	  <h2>Iambic Key</h2>
+	  <input id="iambic" type="image" src="paddle1.jpg" width="160px" height="120px" alt="iambic key"
+		 onkeydown="station.input.iambic.onKeydown(event)" onkeyup="station.input.iambic.onKeyup(event)"
+	         onfocus="station.input.iambic.onFocus()" onblur="station.input.iambic.onBlur()"></input>
+	</div>
+      </div>
+      <div class="center">
+	<div class="column-2-left">
+	  <h2>Output Text</h2>
+	  <div id="output_text" class="center"></div>
+	  <button onclick="document.getElementById('output_text').innerHTML = ''">Clear Output</button>
+	</div>
+	<div class="column-2-right">
+	  <h2>Input Text</h2>
+	  <div id="input_text" class="center"></div>
+	  <button onclick="document.getElementById('input_text').innerHTML = ''">Clear Input</button>
+	</div>
+      </div>
+      <div class="tabbed_menu">
+	<ul>
+	  <li id="about_tab" onclick="tab_select('about')">About</li>
+	  <li id="configure_tab" onclick="tab_select('configure')">Configure</li>
+	  <li id="training_tab" onclick="tab_select('training')">Training</li>
+	</ul>
+	<div id="about_content" class="tab_content">
+	  <p>
+	    This page demonstrates a collection of javascript, html, and css for generating morse code.
+	    Click on one of the pictures above and the keys of your keyboard will operate the telegraph key selected.
+	    The keys that do not auto repeat will work best.
+	  </p><p>
+	    The project is hosted at <a href="http://github.com/recri/morse-code">http://github.com/recri/morse-code</a>.
+	    The project is licensed under the terms of the GNU GPL version 2.0.
+	    The project is copyright &copy; 2015 by Roger E Critchlow Jr, Santa Fe, New Mexico, USA.
+	  </p>
+	</div>
+	<div id="configure_content" class="tab_content">
+	  <div class="column-3-left">
+	    <h3>Straight Key</h3>
+	    <div id="straight_pitch"></div>
+	    <div id="straight_gain"></div>
+	  </div>
+	  <div class="column-3-center">
+	    <h3>Output</h3>
+	    <div id="output_pitch"></div>
+	    <div id="output_speed"></div>
+	    <div id="output_gain"></div>
+	  </div>
+	  <div class="column-3-right">
+	    <h3>Iambic Key</h3>
+	    <div id="iambic_pitch"></div>
+	    <div id="iambic_speed"></div>
+	    <div id="iambic_gain"></div>
+	  </div>
+	</div>
+	<div id="training_content" class="tab_content">
+	  <p>This section will control a variety of training games.</p>
+	</div>
+      </div>
+    </div>
+  </input>
+  </body>
+</html>
+
+

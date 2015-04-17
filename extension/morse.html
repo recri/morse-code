@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Morse Code</title>
+    <title>Morse Code Take 2</title>
   </head>
   <body onload="onLoadHandler()">
     <script type="text/javascript" src="morse.js"></script>
@@ -18,13 +18,62 @@
         elt.textContent += ltr;
         elt.scrollTop = 1000;
       });
-      function slider(name, min, max, value, units, target) {
-        // console.log("slider("+name+")");
-        var inputname = name+"_input";
-        var valuename = name+"_value";
-	document.getElementById(name).innerHTML = '<input id="'+inputname+'"/><br/><span id="'+valuename+'"/>';
-        var inp = document.getElementById(inputname);
-	var val = document.getElementById(valuename);
+      function find_item_checked(name) {
+        var radios = document.getElementsByName(name);
+        for (var i in radios)
+          if (radios[i].checked)
+	    return radios[i].value;
+        return null;
+      }
+      function set_item_checked(name, value) {
+        var radios = document.getElementsByName(name);
+        for (var i in radios)
+          radios[i].checked = (radios[i].value == value);
+      }
+      function key_type_select() {
+        var name = 'key_type';
+        var key_type = find_item_checked(name);
+        if (key_type != station.key_type) {
+          // adapt front end: image and handlers
+          var i = document.getElementById('key_focus')
+          if (key_type == 'straight') {
+            i.src = "straight2.jpg";
+            i.alt = "straight telegraph key";
+          } else {
+            i.src = "paddle1.jpg";
+            i.alt = "iambic paddle key";
+          }
+          // let the back end adapt
+          station.key_type_select(key_type);
+        }
+      }
+      function key_input_select() {
+	station.key_input_select(find_item_checked('key_input'));
+      }
+      function key_input_regenerate_list() {
+        // try to preserve the selected value if possible
+        var key_input = document.getElementById('key_input');
+        var checked = find_item_checked('key_input');
+	if (key_input) {
+          key_input.innerHTML = "";
+	  // key_input.innerHTML += "<input type='radio' name='key_input' value='keyboard' align='left'>Keyboard<br/>";
+          // key_input.innerHTML += "<input type='radio' name='key_input' value='mouse align='left'>Mouse<br/>"
+          // key_input.innerHTML += "<input type='radio' name='key_input' value='touch' align='left'>Touch<br/>"
+          var names = station.midi_key.names();
+          for (var i in names) {
+	    // console.log("adding "+names[i]+" to midi inputs");
+            key_input.innerHTML += "<input type='radio' name='key_input' value='"+names[i]+"' align='left'>"+names[i]+"<br/>";
+          }
+	  if (checked) set_item_checked('key_input', checked);
+	}
+      }
+      function slider(id, min, max, value, units, target) {
+        // console.log("slider("+id+")");
+        var inputid = id+"_input";
+        var valueid = id+"_value";
+	document.getElementById(id).innerHTML = '<input id="'+inputid+'"/><br/><span id="'+valueid+'"/>';
+        var inp = document.getElementById(inputid);
+	var val = document.getElementById(valueid);
         inp.type = "range";
 	inp.min = min;
 	inp.max = max;
@@ -33,6 +82,11 @@
           inp.oninput = inp.onchange = function() {
             val.innerHTML = ""+inp.value+" "+units;
 	    target(Math.pow(10, inp.value/20))
+          }
+        } else if (units == "ms") {
+          inp.oninput = inp.onchange = function() {
+            val.innerHTML = ""+inp.value+" "+units;
+	    target(inp.value/1000)
           }
         } else {
           inp.oninput = inp.onchange = function() {
@@ -43,26 +97,19 @@
 	inp.value = value;
         inp.onchange();
       };
-      function tab_select(prefix) {
-        var prefixes = ["about", "configure", "training"];
-        for (var i in prefixes) {
-          var p = prefixes[i]
-          var tab = document.getElementById(p+"_tab");
-	  var content = document.getElementById(p+"_content");
-	  tab.className = (prefix == p) ? "selected" : "";
-          content.className =  (prefix == p) ? "tab_content_selected" : "tab_content";
-        }
-      };
       function onLoadHandler() {
-	slider("straight_pitch", "220", "1760", "550", "Hz", station.input.straight.setPitch);
-	slider("straight_gain", "-60", "0", "-24", "dB", station.input.straight.setGain);
+	slider("input_pitch", "220", "1760", "550", "Hz", station.input.setPitch);
+	slider("input_gain", "-60", "0", "-24", "dB", station.input.setGain);
+	slider("input_speed", "5", "30", "15", "WPM", station.input.setWPM);
+        slider("input_rise_time", "1", "10", "4", "ms", station.input.setOnTime)
+        slider("input_fall_time", "1", "10", "4", "ms", station.input.setOffTime)
 	slider("output_pitch", "220", "1760", "600", "Hz", station.output.setPitch);
-	slider("output_speed", "5", "30", "15", "WPM", station.output.setWPM);
 	slider("output_gain", "-60", "0", "-24", "dB", station.output.setGain);
-	slider("iambic_pitch", "220", "1760", "650", "Hz", station.input.iambic.setPitch);
-	slider("iambic_speed", "5", "30", "15", "WPM", station.input.iambic.setWPM);
-	slider("iambic_gain", "-60", "0", "-24", "dB", station.input.iambic.setGain);
-        tab_select("configure");
+	slider("output_speed", "5", "30", "15", "WPM", station.output.setWPM);
+        slider("output_rise_time", "1", "10", "4", "ms", station.output.setOnTime)
+        slider("output_fall_time", "1", "10", "4", "ms", station.output.setOffTime)
+        key_input_regenerate_list();
+        key_type_select();
       };
     </script>
     <style>
@@ -70,7 +117,7 @@
 	margin-left: auto;
 	margin-right: auto;
         text-align: center;
-	width: 50%;
+	width: 480px;
       }
       .center {
 	margin-left: auto;
@@ -95,69 +142,58 @@
 	font:16px/26px Georgia, Garamond, Serif;
 	overflow:auto;
       }
+      #key_type, #key_input {
+        text-align: left;
+      }
+      #key_focus {
+        border:5px;
+      }
       .column-3-left { float: left; width: 33%; }
       .column-3-right { float: right; width: 33%; }
       .column-3-center { display: inline-block; width: 33%; }
-      .tabbed_menu {
-	margin.top: 100px;
-      }
-      .tabbed_menu ul {
-        text-align: left;
-	list-style: none;
-	padding:0;
-	margin:0;
-      }
-      .tabbed_menu li {
-	display: inline;
-	border: solid #bbb;
-	border-width: 1px 1px 0 1px;
-	margin: 0 0.5em 0 0;
-        font-size: 1.5em;
-        font-weight: bold;
-      
-	text-decoration: none;
-        color: #bbb;
-        background: #eee;
-	padding: 0 1em;
-      
-        cursor: pointer;
-      }
-      .tabbed_menu li.selected {
-	border: solid black;
-	border-width: 1px 1px 0 1px;
-	padding-bottom: 2px; 
-        color: black;
-	background: white;
-      }
-      .tabbed_menu .tab_content {
-	border: 1px solid;
-        display: none;
-      }
-      .tabbed_menu .tab_content_selected {
-	border: 1px solid;
-        display: block;
-      }
-      #about_content, #training_content {
-	text-align: left;
-      }
     </style>
     <div class="page">
+      <h1>Morse Code Take 2</h1>
       <div class="center">
-	<h1>Morse Code</h1>
-	<div class="column-2-left">
-	  <h2>Straight Key</h2>
-	  <input id="straight" type="image" src="straight2.jpg" width="160px" height="120px" alt="straight key"
-		 onkeydown="station.input.straight.onKeydown(event)" onkeyup="station.input.straight.onKeyup(event)"
-	         onfocus="station.input.straight.onFocus()" onblur="station.input.straight.onBlur()"></input>
+	<div class="column-3-left">
+	  <h2>Key Type</h2>
+	  <form id="key_type" onchange="key_type_select()">
+	    <input type="radio" name="key_type" value="straight" align="left">Straight Key<br/>
+	    <input type="radio" name="key_type" value="iambic" align="left" checked>Iambic Key<br/>
+	  </form>
 	</div>
-	<div class="column-2-right">
-	  <h2>Iambic Key</h2>
-	  <input id="iambic" type="image" src="paddle1.jpg" width="160px" height="120px" alt="iambic key"
-		 onkeydown="station.input.iambic.onKeydown(event)" onkeyup="station.input.iambic.onKeyup(event)"
-	         onfocus="station.input.iambic.onFocus()" onblur="station.input.iambic.onBlur()"></input>
+	<div class="column-3-center" oncontextmenu="return false">
+	  <h2>Key Focus</h2>
+	  <!-- alternate straight2.jpg -->
+	  <input id="key_focus" type="image" src="paddle1.jpg" width="160px" height="120px" alt="iambic paddle"
+	         onfocus="station.input.onfocus()" onblur="station.input.onblur()"
+		 onkeydown="station.input.onkeydown(event)" onkeyup="station.input.onkeyup(event)"
+		 onmousedown="station.input.onmousedown(event)" onmouseup="station.input.onmouseup(event)"
+		 oncontextmenu="return false"
+		 </input>
 	</div>
-      </div>
-      <div class="center">
+	<div class="column-3-right">
+	  <h2>Key Input</h2>
+	  <form id="key_input" onchange="key_input_select()">
+	    <input type="radio" name="key_input" value="keyboard" align="left" checked>Keyboard<br/>
+	    <input type='radio' name='key_input' value='mouse' align="left">Mouse<br/>
+	    <!-- <input type="radio" name="key_input" value="touch" align="left">Touch<br/> -->
+	    <!-- append MIDI devices here
+		 <input type="radio" name="key_input" value="midi">MIDI<br/>
+		 -->
+	  </form>
+	  <form id="recheck_midi">
+	    <button type="button" onclick="key_input_regenerate_list()">Recheck MIDI</button>
+	  </form>
+	    <!--
+	  <h2>Decoders</h2>
+	  <form id="decoders" onchange="decoders_select()">
+	    <input type="checkbox" name="decoders" value="input">Input<br/>
+	    <input type="checkbox" name="decoders" value="output">Output<br/>
+	    <input type="checkbox" name="decoders" value="microphone">Microphone<br/>
+	  </form>
+	  -->
+	</div>
 	<div class="column-2-left">
 	  <h2>Output Text</h2>
 	  <div id="output_text" class="center"></div>
@@ -168,45 +204,21 @@
 	  <div id="input_text" class="center"></div>
 	  <button onclick="document.getElementById('input_text').innerHTML = ''">Clear Input</button>
 	</div>
-      </div>
-      <div class="tabbed_menu">
-	<ul>
-	  <li id="about_tab" onclick="tab_select('about')">About</li>
-	  <li id="configure_tab" onclick="tab_select('configure')">Configure</li>
-	  <li id="training_tab" onclick="tab_select('training')">Training</li>
-	</ul>
-	<div id="about_content" class="tab_content">
-	  <p>
-	    This page demonstrates a collection of javascript, html, and css for generating morse code.
-	    Click on one of the pictures above and the keys of your keyboard will operate the telegraph key selected.
-	    The keys that do not auto repeat will work best.
-	  </p><p>
-	    The project is hosted at <a href="http://github.com/recri/morse-code">http://github.com/recri/morse-code</a>.
-	    The project is licensed under the terms of the GNU GPL version 2.0.
-	    The project is copyright &copy; 2015 by Roger E Critchlow Jr, Santa Fe, New Mexico, USA.
-	  </p>
+	<div class="column-2-left">
+	  <h2>Input</h2>
+	  <div id="input_pitch"></div>
+	  <div id="input_gain"></div>
+	  <div id="input_speed"></div>
+	  <div id="input_rise_time"></div>
+	  <div id="input_fall_time"></div>
 	</div>
-	<div id="configure_content" class="tab_content">
-	  <div class="column-3-left">
-	    <h3>Straight Key</h3>
-	    <div id="straight_pitch"></div>
-	    <div id="straight_gain"></div>
-	  </div>
-	  <div class="column-3-center">
-	    <h3>Output</h3>
-	    <div id="output_pitch"></div>
-	    <div id="output_speed"></div>
-	    <div id="output_gain"></div>
-	  </div>
-	  <div class="column-3-right">
-	    <h3>Iambic Key</h3>
-	    <div id="iambic_pitch"></div>
-	    <div id="iambic_speed"></div>
-	    <div id="iambic_gain"></div>
-	  </div>
-	</div>
-	<div id="training_content" class="tab_content">
-	  <p>This section will control a variety of training games.</p>
+	<div class="column-2-right">
+	  <h2>Output</h2>
+	  <div id="output_pitch"></div>
+	  <div id="output_gain"></div>
+	  <div id="output_speed"></div>
+	  <div id="output_rise_time"></div>
+	  <div id="output_fall_time"></div>
 	</div>
       </div>
     </div>

@@ -724,77 +724,85 @@ function morse_code_straight_input(context) {
 	setOnTime : function(seconds) { straight.player.setOnTime(seconds); },
 	setOffTime : function(seconds) { straight.player.setOffTime(seconds); },
 	connect : function(target) { straight.player.connect(target); },
+	raw_key_on : false,
 	isOn : false,
 	on : function() {
+	    straight.raw_key_on = true;
 	    if ( ! straight.isOn) {
 		straight.player.onAt(straight.player.getCursor());
 		straight.isOn = true;
 	    }
 	},
 	off : function() {
+	    straight.raw_key_on = false;
 	    if (straight.isOn) {
 		straight.player.offAt(straight.player.getCursor());
 		straight.isOn = false;
 	    }
 	},
-	raw_key_on : false,
-	onFocus : function() {
-	    // console.log("straightFocus()");
-	},
-	onBlur : function() {
-	    // console.log("straightBlur()");
-	    if (straight.raw_key_on) {
-		straight.raw_key_on = false;
-		straight.off();
+	onfocus : function() { },
+	onblur : function() { straight.off(); },
+	// handlers for key events
+	onkeydown : function(event) { straight.on(); },
+	onkeyup : function(event) { straight.off(); },
+	// handlers for two button mouse
+	onmousedown : function(event) { straight.on(); },
+	onmouseup : function(event) { straight.off(); },
+	// handlers for MIDI
+	onmidievent : function(event) {
+	    if (event.data.length == 3) {
+		// console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
+		switch (event.data[0]&0xF0) {
+		case 0x90: straight.on(); break;
+		case 0x80: straight.off(); break;
+		}
 	    }
-	},
-	onKeydown : function(event) {
-	    straight.raw_key_on = true;
-	    straight.on();
-	},
-	onKeyup : function(event) {
-	    straight.raw_key_on = false;
-	    straight.off();
 	},
     };
     return straight;
 }
 
 function morse_code_iambic_input(context) {
-    var player = morse_code_player(context);
     var iambic = {
-	player : player,
-	keyer : morse_code_iambic_keyer(player),
+	player : morse_code_player(context),
+	keyer : null,
 	setPitch : function(hertz) { iambic.player.setPitch(hertz); },
 	setGain : function(gain) { iambic.player.setGain(gain); },
 	setOnTime : function(seconds) { iambic.player.setOnTime(seconds); },
 	setOffTime : function(seconds) { iambic.player.setOffTime(seconds); },
-	connect : function(target) { iambic.player.connect(target); },
 	setWPM : function(wpm) { iambic.keyer.setWpm(wpm); },
 	setDah : function(dah) { iambic.keyer.setDah(dah); },
 	setIes : function(ies) { iambic.keyer.setIes(ies); },
+	connect : function(target) { iambic.player.connect(target); },
 
 	raw_dit_on : false,
 	raw_dah_on : false,
-	onFocus : function() {
-	    iambic.start();
+	// handlers for focus
+	onfocus : function() { iambic.start(); },
+	onblur : function() { iambic.stop(); },
+	// handlers for key events
+	onkeydown : function(event) { iambic.keydown((event.keyCode&1)==0); },
+	onkeyup : function(event) { iambic.keyup((event.keyCode&1)==0); },
+	// handlers for two button mouse
+	onmousedown : function(event) { iambic.keydown(event.button == 0); },
+	onmouseup : function(event) { iambic.keyup(event.button == 0); },
+	// handlers for MIDI
+	onmidievent : function(event) {
+	    if (event.data.length == 3) {
+		// console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
+		switch (event.data[0]&0xF0) {
+		case 0x90: iambic.keydown(event.data[1]&1); break;
+		case 0x80: iambic.keyup(event.data[1]&1); break;
+		}
+	    }
 	},
-	onBlur : function() {
-	    iambic.stop();
-	    iambic.raw_dit_on = false;
-	    iambic.raw_dah_on = false;
-	    iambic.player.cancel();
-	},
-	onKeydown : function(event) {
-	    var key = event.keyCode || event.which;
-	    if ((key&1)==0) iambic.raw_dit_on = true;
-	    else iambic.raw_dah_on = true;
+	// common handlers
+	keydown : function(key) {
+	    if (key) iambic.raw_dit_on = true; else iambic.raw_dah_on = true;
 	    iambic.intervalFunction();
 	},
-	onKeyup : function(event) {
-	    var key = event.keyCode || event.which;
-	    if ((key&1)==0) iambic.raw_dit_on = false;
-	    else iambic.raw_dah_on = false;
+	keyup : function(key) {
+	    if (key) iambic.raw_dit_on = false; else iambic.raw_dah_on = false;
 	    iambic.intervalFunction();
 	},
 	intervalLast : context.currentTime,
@@ -817,9 +825,87 @@ function morse_code_iambic_input(context) {
 		clearInterval(iambic.interval);
 		iambic.interval = null;
 	    }
+	    iambic.raw_dit_on = false;
+	    iambic.raw_dah_on = false;
+	    iambic.player.cancel();
 	}
     };
+    iambic.keyer = morse_code_iambic_keyer(iambic.player);
     return iambic;
+}
+
+/*
+** The MIDI interface may need to be enabled in chrome://flags,
+** but even then it may not implement everything needed.
+**
+** This mostly works in chrome-unstable as of 2015-04-16, Version 43.0.2357.18 dev (64-bit).
+** but
+**  1) does not detect hot plugged MIDI devices, only those that are present when
+**  chrome is launched; or maybe it does, but not reliably;
+**  2) the supplied event timestamp has no value;
+**  3) the list of MIDI devices may become stale, ie they're there, they worked once, but they
+**  don't work now even though the browser continues to list them;
+*/
+
+function morse_code_midi_input() {
+    var midi = {
+	midiOptions : { },
+	midi : null,  // global MIDIAccess object
+	onMIDIMessage : function ( event ) {
+	    var str = "MIDI message received at timestamp " + event.timestamp + "[" + event.data.length + " bytes]: ";
+	    for (var i=0; i<event.data.length; i++) {
+		str += "0x" + event.data[i].toString(16) + " ";
+	    }
+	    console.log( str );
+	},
+	onMIDISuccess : function( midiAccess ) {
+	    // console.log( "MIDI ready!" );
+	    midi.midi = midiAccess;
+	},
+	onMIDIFailure : function(msg) {
+	    // console.log( "Failed to get MIDI access - " + msg );
+	},
+	names : function() {
+	    var names = [];
+	    if (midi.midi)
+		for (var x of midi.midi.inputs.values())
+		    names.push(x.name);
+	    return names;
+	},
+	connect : function(name, handler) {
+	    if (midi.midi) {
+		for (var x of midi.midi.inputs.values()) {
+		    if (x.name == name) {
+			// console.log("installing handler for "+name);
+			x.onmidimessage = handler;
+		    }
+		}
+	    }
+	},
+	disconnect : function(name) {
+	    if (midi.midi) {
+		for (var x of midi.midi.inputs.values()) {
+		    if (x.name == name) {
+			// console.log("uninstalling handler for "+name);
+			x.onmidimessage = null;
+		    }
+		}
+	    }
+	},
+    };
+    if (navigator.requestMIDIAccess) {
+	navigator.requestMIDIAccess().then( midi.onMIDISuccess, midi.onMIDIFailure );
+    } else {
+	console.log("no navigator.requestMIDIAccess found");
+    }
+    return midi;
+}
+
+//
+function morse_code_keyboard_input() {
+}
+
+function morse_code_touch_input() {
 }
 
 // translate keyup/keydown into keyed oscillator sidetone
@@ -827,6 +913,25 @@ function morse_code_input(context) {
     var input = {
 	straight : morse_code_straight_input(context),
 	iambic : morse_code_iambic_input(context),
+	setPitch : function(hertz) {
+	    input.straight.setPitch(hertz);
+	    input.iambic.setPitch(hertz);
+	},
+	setGain : function(gain) {
+	    input.straight.setGain(gain);
+	    input.iambic.setGain(gain);
+	},
+	setOnTime : function(seconds) {
+	    input.straight.setOnTime(seconds);
+	    input.iambic.setOnTime(seconds);
+	},
+	setOffTime : function(seconds) {
+	    input.straight.setOffTime(seconds);
+	    input.iambic.setOffTime(seconds);
+	},
+	setWPM : function(wpm) { input.iambic.setWPM(wpm); },
+	setDah : function(dah) { input.iambic.setDah(dah); },
+	setIes : function(ies) { input.iambic.setIes(ies); },
 	connect : function(target) {
 	    input.straight.connect(target);
 	    input.iambic.connect(target);
@@ -840,12 +945,35 @@ function morse_code_station() {
     var context = new (window.AudioContext || window.webkitAudioContext)();
 
     var station = {
+	key_type : null,
+	key_type_select : function(key_type) {
+            if (station.key_type) station.input[station.key_type].onblur();
+	    station.key_type = key_type;
+	    station.input.onfocus=station.input[key_type].onfocus;
+	    station.input.onblur=station.input[key_type].onblur;
+	    station.input.onkeydown=station.input[key_type].onkeydown;
+	    station.input.onkeyup=station.input[key_type].onkeyup;
+	    station.input.onmousedown=station.input[key_type].onmousedown;
+	    station.input.onmouseup=station.input[key_type].onmouseup;
+	    station.input.onmidievent=station.input[key_type].onmidievent;
+	    if (station.key_input) key_input_select(station.key_input);
+	},
+	key_input : null,
+	key_input_select : function(key_input) {
+	    if (station.key_input != key_input)
+		station.midi_key.disconnect(station.key_input)
+	    station.key_input = key_input;
+	    station.midi_key.connect(key_input, station.input.onmidievent)
+	},
 	output : morse_code_output(context),
 	output_detimer : morse_code_detime(context),
 	output_decoder : morse_code_decode(context),
 	input : morse_code_input(context),
 	input_detimer : morse_code_detime(context),
 	input_decoder : morse_code_decode(context),
+	midi_key : morse_code_midi_input(),
+	keyboard_key : morse_code_keyboard_input(),
+	touch_key : morse_code_touch_input(),
     };
 
     station.output.connect(context.destination);
