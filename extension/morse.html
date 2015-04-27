@@ -8,12 +8,12 @@
     <script type="text/javascript" src="words.js"></script>
     <script type="text/javascript">
       var station = morse_code_station();
-      station.input_decoder.setLetterConsumer(function(ltr, code) {
+      station.input_decoder.on('letter', function(ltr, code) {
         var elt = document.getElementById("input_text");
         elt.textContent += ltr;
         elt.scrollTop = 1000;
       });
-      station.output_decoder.setLetterConsumer(function(ltr, code) {
+      station.output_decoder.on('letter', function(ltr, code) {
         var elt = document.getElementById("output_text");
         elt.textContent += ltr;
         elt.scrollTop = 1000;

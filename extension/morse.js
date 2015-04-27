@@ -286,24 +286,37 @@ function morse_code_player(context) {
 	    self.key.gain.setValueAtTime(0.0, time);
 	    self.key.gain.linearRampToValueAtTime(self.gain, time+self.onTime);
 	    self.cursor = time;
-	    self.transition(1);
+	    self.transition(1, time);
 	},
 	keyOffAt : function(time) {
 	    self.key.gain.setValueAtTime(self.gain, time);
 	    self.key.gain.linearRampToValueAtTime(0.0, time+self.offTime);
 	    self.cursor = time;
-	    self.transition(0);
+	    self.transition(0, time);
 	},
 	keyHoldFor : function(seconds) { return self.cursor += seconds;	},
 	cancel : function() {
 	    self.key.gain.cancelScheduledValues(self.cursor = context.currentTime);
 	    self.key.gain.value = 0;
 	},
-	transitionConsumer : null,
-	setTransitionConsumer : function(transitionConsumer) { self.transitionConsumer = transitionConsumer; },
-	transition : function(onoff) {
-	    if (self.transitionConsumer) self.transitionConsumer.transition(onoff, self.cursor);
+	events : {},
+	on : function(type, func, ctx) {
+	    (self.events[type] = self.events[type] || []).push({f:func, c:ctx})
 	},
+	off : function(type, func) {
+	    type || (self.events = {})
+	    var list = self.events[type] || [],
+	    i = list.length = func ? list.length : 0
+	    while(i-->0) func == list[i].f && list.splice(i,1)
+	},
+	emit : function(){
+	    var args = Array.apply([], arguments);
+	    var list = self.events[args.shift()] || [];
+	    var i=0;
+	    var j;
+	    while (j=list[i++]) j.f.apply(j.c, args)
+	},
+	transition : function(onoff, time) { self.emit('transition', onoff, time); },
 
     };
     // initialize the oscillator
@@ -415,10 +428,6 @@ function morse_code_detone(context) {
 		return 0;
 	    }
 	},
-	transitionConsumer : null,
-	setTransitionConsumer : function(transitionConsumer) {
-	    self.transitionConsumer = transitionConsumer;
-	},
 	maxPower : 0,
 	oldPower : 0,
 	dtime : 0,
@@ -432,13 +441,11 @@ function morse_code_detone(context) {
 	    for (var sample = 0; sample < inputBuffer.length; sample++) {
 		outputData[sample] = inputData[sample];
 		if (self.detone_process(inputData[sample])) {
-		    if (self.transitionConsumer) {
-			self.maxPower = Math.max(self.power, self.maxPower);
-			if (self.onoff == 0 && self.oldPower < 0.6*self.maxPower && self.power > 0.6*self.maxPower)
-			    self.transitionConsumer.transition(self.onoff = 1, time);
-			if (self.onoff == 1 && self.oldPower > 0.4*self.maxPower && self.power < 0.4*self.maxPower)
-			    self.transitionConsumer.transition(self.onoff = 0, time);
-		    }
+		    self.maxPower = Math.max(self.power, self.maxPower);
+		    if (self.onoff == 0 && self.oldPower < 0.6*self.maxPower && self.power > 0.6*self.maxPower)
+			self.transition(self.onoff = 1, time);
+		    if (self.onoff == 1 && self.oldPower > 0.4*self.maxPower && self.power < 0.4*self.maxPower)
+			self.transition(self.onoff = 0, time);
 		}
 		self.oldPower = self.power;
 		time += self.dtime;
@@ -446,6 +453,25 @@ function morse_code_detone(context) {
 	},
 	connect : function(node) { self.scriptNode.connect(node) },
 	getTarget : function() { return self.scriptNode; },
+	// event handling
+	events : {},
+	on : function(type, func, ctx) {
+	    (self.events[type] = self.events[type] || []).push({f:func, c:ctx})
+	},
+	off : function(type, func) {
+	    type || (self.events = {})
+	    var list = self.events[type] || [],
+	    i = list.length = func ? list.length : 0
+	    while(i-->0) func == list[i].f && list.splice(i,1)
+	},
+	emit : function(){
+	    var args = Array.apply([], arguments);
+	    var list = self.events[args.shift()] || [];
+	    var i=0;
+	    var j;
+	    while (j=list[i++]) j.f.apply(j.c, args);
+	},
+	transition : function(onoff, time) { self.emit('transition', onoff, time); },
     };
     self.dtime = 1.0 / context.sampleRate;
     self.scriptNode.onaudioprocess = self.onAudioProcess;
@@ -553,16 +579,28 @@ function morse_code_detime(context) {
 		}
 	    }
 	},
-	elementConsumer : null,
-	setElementConsumer : function(elementConsumer) {
-	    self.elementConsumer = elementConsumer;
-	},
-	element : function(element, timeEnded) {
-	    if (self.elementConsumer) self.elementConsumer.element(element, timeEnded);
-	},
 	transition : function(onoff, time) {
 	    self.element(self.detime_process(onoff, time), time);
 	},
+	// event handling
+	events : {},
+	on : function(type, func, ctx) {
+	    (self.events[type] = self.events[type] || []).push({f:func, c:ctx})
+	},
+	off : function(type, func) {
+	    type || (self.events = {})
+	    var list = self.events[type] || [],
+	    i = list.length = func ? list.length : 0
+	    while(i-->0) func == list[i].f && list.splice(i,1)
+	},
+	emit : function(){
+	    var args = Array.apply([], arguments);
+	    var list = self.events[args.shift()] || [];
+	    var i=0;
+	    var j;
+	    while (j=list[i++]) j.f.apply(j.c, args);
+	},
+	element : function(element, timeEnded) { self.emit('element', element, timeEnded); },
     }
     self.configure(15, 50);	// this is part suggestion (15 wpm) and part routine (50 dits/word is PARIS)
     return self;
@@ -578,7 +616,7 @@ function morse_code_decode(context) {
 	    self.elementTimeout = null;
 	    if (self.elements.length > 0) {
 		var code = self.elements.join('');
-		self.letter(self.table.decode(code), code);
+		self.letter(self.table.decode(code) || '\u25a1', code);
 		self.elements = [];
 	    }
 	},
@@ -597,22 +635,32 @@ function morse_code_decode(context) {
 	    }
 	    if (self.elements.length > 0) {
 		var code = self.elements.join('');
-		self.letter(self.table.decode(code), code);
+		self.letter(self.table.decode(code)  || '\u25a1', code);
 		self.elements = [];
 	    }
 	    if (elt == '\t') {
 		self.letter(' ', elt);
 	    }
 	},
-	letterConsumer : null,
-	setLetterConsumer : function(letterConsumer) {
-	    self.letterConsumer = letterConsumer;
+	// event handling
+	events : {},
+	on : function(type, func, ctx) {
+	    (self.events[type] = self.events[type] || []).push({f:func, c:ctx})
 	},
-	letter : function(ltr, code) {
-	    // generate the unicode for 'white square' if undefined or null
-	    if (self.letterConsumer) self.letterConsumer(ltr || '\u25a1', code);
-	    // console.log("letter('"+ltr+"', '"+code+"')");
+	off : function(type, func) {
+	    type || (self.events = {})
+	    var list = self.events[type] || [],
+	    i = list.length = func ? list.length : 0
+	    while(i-->0) func == list[i].f && list.splice(i,1)
 	},
+	emit : function(){
+	    var args = Array.apply([], arguments);
+	    var list = self.events[args.shift()] || [];
+	    var i=0;
+	    var j;
+	    while (j=list[i++]) j.f.apply(j.c, args);
+	},
+	letter : function(ltr, code) { self.emit('letter', ltr, code); },
     };
     return self;
 }
@@ -1017,16 +1065,16 @@ function morse_code_station() {
     };
 
     self.output.connect(context.destination);
-    self.output.player.setTransitionConsumer(self.output_detimer);
+    self.output.player.on('transition', self.output_detimer.transition);
 
-    self.output_detimer.setElementConsumer(self.output_decoder);
+    self.output_detimer.on('element', self.output_decoder.element);
 
     self.input.connect(context.destination);
 
-    self.input.straight.player.setTransitionConsumer(self.input_detimer);
-    self.input.iambic.player.setTransitionConsumer(self.input_detimer);
+    self.input.straight.player.on('transition', self.input_detimer.transition);
+    self.input.iambic.player.on('transition', self.input_detimer.transition);
 
-    self.input_detimer.setElementConsumer(self.input_decoder);
+    self.input_detimer.on('element', self.input_decoder.element);
 
     var table = self.output.table;
     self.output_decoder.table = table;
