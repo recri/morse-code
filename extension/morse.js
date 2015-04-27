@@ -17,32 +17,41 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 
-function morse_code_event(target){
-  var events = {};
-  target = target || this
-    /**
-     *  On: listen to events
-     */
-    target.on = function(type, func, ctx){
-      (events[type] = events[type] || []).push({f:func, c:ctx})
+if (false) {
+    // for documentation, spliced inline where needed
+    function morse_code_event(target) {
+	var self = {
+	    /**
+	     * events: installed event handlers
+	     */
+	    events : {},
+	    /**
+	     *  on: listen to events
+	     */
+	    on : function(type, func, ctx) {
+		(self.events[type] = self.events[type] || []).push({f:func, c:ctx})
+	    },
+	    /**
+	     *  Off: stop listening to event / specific callback
+	     */
+	    off : function(type, func) {
+		type || (self.events = {})
+		var list = self.events[type] || [],
+		i = list.length = func ? list.length : 0
+		while(i-->0) func == list[i].f && list.splice(i,1)
+	    },
+	    /** 
+	     * Emit: send event, callbacks will be triggered
+	     */
+	    emit : function(){
+		var args = Array.apply([], arguments);
+		var list = self.events[args.shift()] || [];
+		var i=0;
+		var j;
+		while (j=list[i++]) j.f.apply(j.c, args)
+	    },
+	};
     }
-    /**
-     *  Off: stop listening to event / specific callback
-     */
-    target.off = function(type, func){
-      type || (events = {})
-      var list = events[type] || [],
-      i = list.length = func ? list.length : 0
-      while(i-->0) func == list[i].f && list.splice(i,1)
-    }
-    /** 
-     * Emit: send event, callbacks will be triggered
-     */
-    target.emit = function(){
-      var args = Array.apply([], arguments),
-      list = events[args.shift()] || [], i=0, j
-      for(;j=list[i++];) j.f.apply(j.c, args)
-    };
 }
 
 /*
@@ -265,27 +274,27 @@ function morse_code_player(context) {
 	setOffTime : function(seconds) { self.offTime = seconds || 0.004; },
 	getCursor : function() { return self.cursor = Math.max(self.cursor, context.currentTime); },
 	connect : function(target) { self.key.connect(target); },
-	on : function() {
+	keyOn : function() {
 	    self.cancel();
-	    self.onAt(context.currentTime);
+	    self.keyOnAt(context.currentTime);
 	},
-	off : function() {
+	keyOff : function() {
 	    self.cancel();
 	    self.offAt(context.currentTime);
 	},
-	onAt : function(time) {
+	keyOnAt : function(time) {
 	    self.key.gain.setValueAtTime(0.0, time);
 	    self.key.gain.linearRampToValueAtTime(self.gain, time+self.onTime);
 	    self.cursor = time;
 	    self.transition(1);
 	},
-	offAt : function(time) {
+	keyOffAt : function(time) {
 	    self.key.gain.setValueAtTime(self.gain, time);
 	    self.key.gain.linearRampToValueAtTime(0.0, time+self.offTime);
 	    self.cursor = time;
 	    self.transition(0);
 	},
-	holdFor : function(seconds) { return self.cursor += seconds;	},
+	keyHoldFor : function(seconds) { return self.cursor += seconds;	},
 	cancel : function() {
 	    self.key.gain.cancelScheduledValues(self.cursor = context.currentTime);
 	    self.key.gain.value = 0;
@@ -328,9 +337,9 @@ function morse_code_output(context) {
 	setOnTime : function(seconds) { self.player.setOnTime(seconds); },
 	setOffTime : function(seconds) { self.player.setOffTime(seconds); },
 	connect : function(target) { self.player.connect(target); },
-	onAt : function(time) { self.player.onAt(time); },
-	offAt : function(time) { self.player.offAt(time); },
-	holdFor : function(seconds) { return self.player.holdFor(seconds); },
+	keyOnAt : function(time) { self.player.keyOnAt(time); },
+	keyOffAt : function(time) { self.player.keyOffAt(time); },
+	keyHoldFor : function(seconds) { return self.player.keyHoldFor(seconds); },
 	getCursor : function() { return self.player.getCursor(); },
 	cancel : function() { self.player.cancel(); },
 	send : function(string) {
@@ -339,16 +348,16 @@ function morse_code_output(context) {
 	    for (var i = 0; i < code.length; i += 1) {
 		var c = code.charAt(i);
 		if (c == '.' || c == '-') {
-		    self.onAt(time);
-		    time = self.holdFor((c == '.' ? 1 : self.dah) * self.dit);
-		    self.offAt(time);
-		    time = self.holdFor(self.ies * self.dit);
+		    self.keyOnAt(time);
+		    time = self.keyHoldFor((c == '.' ? 1 : self.dah) * self.dit);
+		    self.keyOffAt(time);
+		    time = self.keyHoldFor(self.ies * self.dit);
 		} else if (c == ' ') {
 		    if (i+2 < code.length && code.charAt(i+1) == ' ' && code.charAt(i+2) == ' ') {
-			time = self.holdFor((self.iws-self.ies) * self.dit);
+			time = self.keyHoldFor((self.iws-self.ies) * self.dit);
 			i += 2;
 		    } else {
-			time = self.holdFor((self.ils-self.ies) * self.dit);
+			time = self.keyHoldFor((self.ils-self.ies) * self.dit);
 		    }
 		}
 	    }
@@ -686,9 +695,9 @@ function morse_code_iambic_keyer(player) {
 	timer += len+_perIes;
 	// sound the element
 	var time = player.getCursor()
-	player.onAt(time);
-	player.offAt(time+len);
-	player.holdFor(_perIes);
+	player.keyOnAt(time);
+	player.keyOffAt(time+len);
+	player.keyHoldFor(_perIes);
     }
 
     function make_dit() { transition(DIT, _perDit); }
@@ -755,35 +764,35 @@ function morse_code_straight_input(context) {
 	connect : function(target) { self.player.connect(target); },
 	raw_key_on : false,
 	isOn : false,
-	on : function() {
+	keyOn : function() {
 	    self.raw_key_on = true;
 	    if ( ! self.isOn) {
-		self.player.onAt(self.player.getCursor());
+		self.player.keyOnAt(self.player.getCursor());
 		self.isOn = true;
 	    }
 	},
-	off : function() {
+	keyOff : function() {
 	    self.raw_key_on = false;
 	    if (self.isOn) {
-		self.player.offAt(self.player.getCursor());
+		self.player.keyOffAt(self.player.getCursor());
 		self.isOn = false;
 	    }
 	},
 	onfocus : function() { },
-	onblur : function() { self.off(); },
+	onblur : function() { self.keyOff(); },
 	// handlers for key events
-	onkeydown : function(event) { self.on(); },
-	onkeyup : function(event) { self.off(); },
+	onkeydown : function(event) { self.keyOn(); },
+	onkeyup : function(event) { self.keyOff(); },
 	// handlers for two button mouse
-	onmousedown : function(event) { self.on(); },
-	onmouseup : function(event) { self.off(); },
+	onmousedown : function(event) { self.keyOn(); },
+	onmouseup : function(event) { self.keyOff(); },
 	// handlers for MIDI
 	onmidievent : function(event) {
 	    if (event.data.length == 3) {
 		// console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
 		switch (event.data[0]&0xF0) {
-		case 0x90: self.on(); break;
-		case 0x80: self.off(); break;
+		case 0x90: self.keyon(); break;
+		case 0x80: self.keyOff(); break;
 		}
 	    }
 	},
@@ -906,8 +915,8 @@ function morse_code_midi_input() {
 	    if (self.midi) {
 		for (var x of self.midi.inputs.values()) {
 		    if (x.name == name) {
-			// console.log("installing handler for "+name);
 			x.onmidimessage = handler;
+			// console.log("installing handler for "+name);
 		    }
 		}
 	    }
