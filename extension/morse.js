@@ -17,6 +17,34 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 
+function morse_code_event(target){
+  var events = {};
+  target = target || this
+    /**
+     *  On: listen to events
+     */
+    target.on = function(type, func, ctx){
+      (events[type] = events[type] || []).push({f:func, c:ctx})
+    }
+    /**
+     *  Off: stop listening to event / specific callback
+     */
+    target.off = function(type, func){
+      type || (events = {})
+      var list = events[type] || [],
+      i = list.length = func ? list.length : 0
+      while(i-->0) func == list[i].f && list.splice(i,1)
+    }
+    /** 
+     * Emit: send event, callbacks will be triggered
+     */
+    target.emit = function(){
+      var args = Array.apply([], arguments),
+      list = events[args.shift()] || [], i=0, j
+      for(;j=list[i++];) j.f.apply(j.c, args)
+    };
+}
+
 /*
 ** the source and license for this package may be found at github/recri/morse-code
 ** see README.org at that repo for documentation.
@@ -223,7 +251,7 @@ function morse_code_table() {
 
 // translate keyup/keydown into keyed sidetone
 function morse_code_player(context) {
-    var player = {
+    var self = {
 	oscillator : context.createOscillator(),
 	key : context.createGain(),
 	pitch : 600,		// oscillator pitch
@@ -231,58 +259,58 @@ function morse_code_player(context) {
 	onTime : 0.004,		// key on ramp length in seconds
 	offTime : 0.004,	// key off ramp length in seconds
 	cursor : 0,		// next time
-	setPitch : function(hertz) { player.oscillator.frequency.value = hertz; },
-	setGain : function(gain) { player.gain = Math.min(Math.max(gain, 0.001), 1.0); },
-	setOnTime : function(seconds) { player.onTime = seconds || 0.004; },
-	setOffTime : function(seconds) { player.offTime = seconds || 0.004; },
-	getCursor : function() { return player.cursor = Math.max(player.cursor, context.currentTime); },
-	connect : function(target) { player.key.connect(target); },
+	setPitch : function(hertz) { self.oscillator.frequency.value = hertz; },
+	setGain : function(gain) { self.gain = Math.min(Math.max(gain, 0.001), 1.0); },
+	setOnTime : function(seconds) { self.onTime = seconds || 0.004; },
+	setOffTime : function(seconds) { self.offTime = seconds || 0.004; },
+	getCursor : function() { return self.cursor = Math.max(self.cursor, context.currentTime); },
+	connect : function(target) { self.key.connect(target); },
 	on : function() {
-	    player.cancel();
-	    player.onAt(context.currentTime);
+	    self.cancel();
+	    self.onAt(context.currentTime);
 	},
 	off : function() {
-	    player.cancel();
-	    player.offAt(context.currentTime);
+	    self.cancel();
+	    self.offAt(context.currentTime);
 	},
 	onAt : function(time) {
-	    player.key.gain.setValueAtTime(0.0, time);
-	    player.key.gain.linearRampToValueAtTime(player.gain, time+player.onTime);
-	    player.cursor = time;
-	    player.transition(1);
+	    self.key.gain.setValueAtTime(0.0, time);
+	    self.key.gain.linearRampToValueAtTime(self.gain, time+self.onTime);
+	    self.cursor = time;
+	    self.transition(1);
 	},
 	offAt : function(time) {
-	    player.key.gain.setValueAtTime(player.gain, time);
-	    player.key.gain.linearRampToValueAtTime(0.0, time+player.offTime);
-	    player.cursor = time;
-	    player.transition(0);
+	    self.key.gain.setValueAtTime(self.gain, time);
+	    self.key.gain.linearRampToValueAtTime(0.0, time+self.offTime);
+	    self.cursor = time;
+	    self.transition(0);
 	},
-	holdFor : function(seconds) { return player.cursor += seconds;	},
+	holdFor : function(seconds) { return self.cursor += seconds;	},
 	cancel : function() {
-	    player.key.gain.cancelScheduledValues(player.cursor = context.currentTime);
-	    player.key.gain.value = 0;
+	    self.key.gain.cancelScheduledValues(self.cursor = context.currentTime);
+	    self.key.gain.value = 0;
 	},
 	transitionConsumer : null,
-	setTransitionConsumer : function(transitionConsumer) { player.transitionConsumer = transitionConsumer; },
+	setTransitionConsumer : function(transitionConsumer) { self.transitionConsumer = transitionConsumer; },
 	transition : function(onoff) {
-	    if (player.transitionConsumer) player.transitionConsumer.transition(onoff, player.cursor);
+	    if (self.transitionConsumer) self.transitionConsumer.transition(onoff, self.cursor);
 	},
 
     };
     // initialize the oscillator
-    player.oscillator.type = 'sine';
-    player.setPitch(player.pitch); // value in hertz
-    player.oscillator.start();
+    self.oscillator.type = 'sine';
+    self.setPitch(self.pitch); // value in hertz
+    self.oscillator.start();
     // initialize the gain
-    player.key.gain.value = 0;
+    self.key.gain.value = 0;
     // wire up the oscillator and gain nodes
-    player.oscillator.connect(player.key);
-    return player;
+    self.oscillator.connect(self.key);
+    return self;
 }
 
 // translate text into keyed sidetone
 function morse_code_output(context) {
-    var output = {
+    var self = {
 	player : morse_code_player(context),
 	table : morse_code_table(),
 	wpm : 20,		// words per minute
@@ -292,41 +320,41 @@ function morse_code_output(context) {
 	ils : 3,		// interletter space in dits
 	iws : 7,		// interword space in dits
 	setWPM : function(wpm) {
-	    output.wpm = wpm || 20;
-	    output.dit = 60.0 / (output.wpm * 50);
+	    self.wpm = wpm || 20;
+	    self.dit = 60.0 / (self.wpm * 50);
 	},
-	setPitch : function(hertz) { output.player.setPitch(hertz); },
-	setGain : function(gain) { output.player.setGain(gain); },
-	setOnTime : function(seconds) { output.player.setOnTime(seconds); },
-	setOffTime : function(seconds) { output.player.setOffTime(seconds); },
-	connect : function(target) { output.player.connect(target); },
-	onAt : function(time) { output.player.onAt(time); },
-	offAt : function(time) { output.player.offAt(time); },
-	holdFor : function(seconds) { return output.player.holdFor(seconds); },
-	getCursor : function() { return output.player.getCursor(); },
-	cancel : function() { output.player.cancel(); },
+	setPitch : function(hertz) { self.player.setPitch(hertz); },
+	setGain : function(gain) { self.player.setGain(gain); },
+	setOnTime : function(seconds) { self.player.setOnTime(seconds); },
+	setOffTime : function(seconds) { self.player.setOffTime(seconds); },
+	connect : function(target) { self.player.connect(target); },
+	onAt : function(time) { self.player.onAt(time); },
+	offAt : function(time) { self.player.offAt(time); },
+	holdFor : function(seconds) { return self.player.holdFor(seconds); },
+	getCursor : function() { return self.player.getCursor(); },
+	cancel : function() { self.player.cancel(); },
 	send : function(string) {
-	    var code = output.table.encode(string);
-	    var time = output.getCursor();
+	    var code = self.table.encode(string);
+	    var time = self.getCursor();
 	    for (var i = 0; i < code.length; i += 1) {
 		var c = code.charAt(i);
 		if (c == '.' || c == '-') {
-		    output.onAt(time);
-		    time = output.holdFor((c == '.' ? 1 : output.dah) * output.dit);
-		    output.offAt(time);
-		    time = output.holdFor(output.ies * output.dit);
+		    self.onAt(time);
+		    time = self.holdFor((c == '.' ? 1 : self.dah) * self.dit);
+		    self.offAt(time);
+		    time = self.holdFor(self.ies * self.dit);
 		} else if (c == ' ') {
 		    if (i+2 < code.length && code.charAt(i+1) == ' ' && code.charAt(i+2) == ' ') {
-			time = output.holdFor((output.iws-output.ies) * output.dit);
+			time = self.holdFor((self.iws-self.ies) * self.dit);
 			i += 2;
 		    } else {
-			time = output.holdFor((output.ils-output.ies) * output.dit);
+			time = self.holdFor((self.ils-self.ies) * self.dit);
 		    }
 		}
 	    }
 	},
     };
-    return output;
+    return self;
 }
 
 //
@@ -342,7 +370,7 @@ function morse_code_detone(context) {
     ** and the video presentation of CW mode for the NUE-PSK modem
     ** at TAPR DCC 2011 by George Heron N2APB and Dave Collins AD7JT.
     */
-    var filter = {
+    var self = {
 	scriptNode : context.createScriptProcessor(1024, 1, 1),
 	center : 600,
 	bandwidth : 100,
@@ -353,26 +381,26 @@ function morse_code_detone(context) {
 	power : 0,
 	setCenterAndBandwidth : function(center, bandwidth) {
 	    if (center > 0 && center > context.sampleRate/4) {
-		filter.center = center;
+		self.center = center;
 	    } else {
-		filter.center = 600;
+		self.center = 600;
 	    }
 	    if (bandwidth > 0 && bandwidth > context.sampleRate/4) {
-		filter.bandwidth = bandwidth;
+		self.bandwidth = bandwidth;
 	    } else {
-		filter.bandwidth = 50;
+		self.bandwidth = 50;
 	    }
-	    filter.coeff = 2 * Math.cos(2*Math.PI*filter.center/context.sampleRate);
-	    filter.block_size = context.sampleRate / filter.bandwidth;
-	    filter.i = filter.block_size;
-	    filter.s[0] = filter.s[1] = filter.s[3] = filter.s[4] = 0;
+	    self.coeff = 2 * Math.cos(2*Math.PI*self.center/context.sampleRate);
+	    self.block_size = context.sampleRate / self.bandwidth;
+	    self.i = self.block_size;
+	    self.s[0] = self.s[1] = self.s[3] = self.s[4] = 0;
 	},
 	detone_process : function(x) {
-	    filter.s[filter.i&3] = x + filter.coeff * filter.s[(filter.i+1)&3] - filter.s[(filter.i+2)&3];
-	    if (--filter.i < 0) {
-		filter.power = filter.s[1]*filter.s[1] + filter.s[0]*filter.s[0] - filter.coeff*filter.s[0]*filter.s[1];
-		filter.i = filter.block_size;
-		filter.s[0] = filter.s[1] = filter.s[2] = filter.s[3] = 0.0;
+	    self.s[self.i&3] = x + self.coeff * self.s[(self.i+1)&3] - self.s[(self.i+2)&3];
+	    if (--self.i < 0) {
+		self.power = self.s[1]*self.s[1] + self.s[0]*self.s[0] - self.coeff*self.s[0]*self.s[1];
+		self.i = self.block_size;
+		self.s[0] = self.s[1] = self.s[2] = self.s[3] = 0.0;
 		return 1;
 	    } else {
 		return 0;
@@ -380,7 +408,7 @@ function morse_code_detone(context) {
 	},
 	transitionConsumer : null,
 	setTransitionConsumer : function(transitionConsumer) {
-	    filter.transitionConsumer = transitionConsumer;
+	    self.transitionConsumer = transitionConsumer;
 	},
 	maxPower : 0,
 	oldPower : 0,
@@ -394,25 +422,25 @@ function morse_code_detone(context) {
 	    var time = audioProcessingEvent.playbackTime;
 	    for (var sample = 0; sample < inputBuffer.length; sample++) {
 		outputData[sample] = inputData[sample];
-		if (filter.detone_process(inputData[sample])) {
-		    if (filter.transitionConsumer) {
-			filter.maxPower = Math.max(filter.power, filter.maxPower);
-			if (filter.onoff == 0 && filter.oldPower < 0.6*filter.maxPower && filter.power > 0.6*filter.maxPower)
-			    filter.transitionConsumer.transition(filter.onoff = 1, time);
-			if (filter.onoff == 1 && filter.oldPower > 0.4*filter.maxPower && filter.power < 0.4*filter.maxPower)
-			    filter.transitionConsumer.transition(filter.onoff = 0, time);
+		if (self.detone_process(inputData[sample])) {
+		    if (self.transitionConsumer) {
+			self.maxPower = Math.max(self.power, self.maxPower);
+			if (self.onoff == 0 && self.oldPower < 0.6*self.maxPower && self.power > 0.6*self.maxPower)
+			    self.transitionConsumer.transition(self.onoff = 1, time);
+			if (self.onoff == 1 && self.oldPower > 0.4*self.maxPower && self.power < 0.4*self.maxPower)
+			    self.transitionConsumer.transition(self.onoff = 0, time);
 		    }
 		}
-		filter.oldPower = filter.power;
-		time += filter.dtime;
+		self.oldPower = self.power;
+		time += self.dtime;
 	    }
 	},
-	connect : function(node) { filter.scriptNode.connect(node) },
-	getTarget : function() { return filter.scriptNode; },
+	connect : function(node) { self.scriptNode.connect(node) },
+	getTarget : function() { return self.scriptNode; },
     };
-    filter.dtime = 1.0 / context.sampleRate;
-    filter.scriptNode.onaudioprocess = filter.onAudioProcess;
-    return filter;
+    self.dtime = 1.0 / context.sampleRate;
+    self.scriptNode.onaudioprocess = self.onAudioProcess;
+    return self;
 }
 
 // translate keydown/keyup events to dit dah strings
@@ -423,7 +451,7 @@ function morse_code_detime(context) {
     ** and start translating the marks and spaces into
     ** dits, dahs, inter-symbol spaces, and inter-word spaces
     */
-    var detimer = {
+    var self = {
 	wpm : 0,		/* float words per minute */
 	word : 50,		/* float dits per word */
 	estimate : 0,		/* float estimated dot clock period */
@@ -435,9 +463,9 @@ function morse_code_detime(context) {
 	n_iws : 1,		/* unsigned number of inter-word spaces estimated */
 
 	configure : function(wpm, word) {
-	    detimer.wpm = wpm > 0 ? wpm : 15;
-	    detimer.word = 50;
-	    detimer.estimate = (context.sampleRate * 60) / (detimer.wpm * detimer.word);
+	    self.wpm = wpm > 0 ? wpm : 15;
+	    self.word = 50;
+	    self.estimate = (context.sampleRate * 60) / (self.wpm * self.word);
 	},
 
 	/*
@@ -456,127 +484,128 @@ function morse_code_detime(context) {
 	*/
 	detime_process : function(onoff, time) {
 	    time *= context.sampleRate;			/* convert seconds to frames */ 
-	    var observation = time - detimer.time;	/* float length of observed element or space */
-	    detimer.time = time;
+	    var observation = time - self.time;	/* float length of observed element or space */
+	    self.time = time;
 	    if (onoff == 0) {				/* the end of a dit or a dah */
 		var o_dit = observation;		/* float if it's a dit, then the length is the dit clock observation */
 		var o_dah = observation / 3;		/* float if it's a dah, then the length/3 is the dit clock observation */
-		var d_dit = o_dit - detimer.estimate;	/* float the dit distance from the current estimate */
-		var d_dah = o_dah - detimer.estimate;	/* float the dah distance from the current estimate */
+		var d_dit = o_dit - self.estimate;	/* float the dit distance from the current estimate */
+		var d_dah = o_dah - self.estimate;	/* float the dah distance from the current estimate */
 		if (d_dit == 0 || d_dah == 0) {
 		    /* one of the observations is spot on, so 1/(d*d) will be infinite and the estimate is unchanged */
 		} else {
 		    /* the weight of an observation is the observed frequency of the element scaled by inverse of
 		     * distance from our current estimate normalized to one over the observations made.
 		     */
-		    var w_dit = 1.0 * detimer.n_dit / (d_dit*d_dit); /* raw weight of dit observation */
-		    var w_dah = 1.0 * detimer.n_dah / (d_dah*d_dah); /* raw weight of dah observation */
+		    var w_dit = 1.0 * self.n_dit / (d_dit*d_dit); /* raw weight of dit observation */
+		    var w_dah = 1.0 * self.n_dah / (d_dah*d_dah); /* raw weight of dah observation */
 		    var wt = w_dit + w_dah;			     /* weight normalization */
 		    var update = (o_dit * w_dit + o_dah * w_dah) / wt;
 		    //console.log("o_dit="+o_dit+", w_dit="+w_dit+", o_dah="+o_dah+", w_dah="+w_dah+", wt="+wt);
-		    //console.log("update="+update+", estimate="+detimer.estimate);
-		    detimer.estimate += update;
-		    detimer.estimate /= 2;
-		    detimer.wpm = (context.sampleRate * 60) / (detimer.estimage * detimer.word);
+		    //console.log("update="+update+", estimate="+self.estimate);
+		    self.estimate += update;
+		    self.estimate /= 2;
+		    self.wpm = (context.sampleRate * 60) / (self.estimage * self.word);
 		}
-		var guess = 100 * observation / detimer.estimate;    /* make a guess */
+		var guess = 100 * observation / self.estimate;    /* make a guess */
 		if (guess < 200) {
-		    detimer.n_dit += 1; return '.';
+		    self.n_dit += 1; return '.';
 		} else {
-		    detimer.n_dah += 1; return '-';
+		    self.n_dah += 1; return '-';
 		}
 	    } else {					/* the end of an inter-element, inter-letter, or a longer space */
 		var o_ies = observation;
 		var o_ils = observation / 3;
-		var d_ies = o_ies - detimer.estimate;
-		var d_ils = o_ils - detimer.estimate;
-		var guess = 100 * observation / detimer.estimate;
+		var d_ies = o_ies - self.estimate;
+		var d_ils = o_ils - self.estimate;
+		var guess = 100 * observation / self.estimate;
 		if (d_ies == 0 || d_ils == 0) {
 		    /* if one of the observations is spot on, then 1/(d*d) will be infinite and the estimate is unchanged */	    
 		} else if (guess > 500) {
 		    /* if it looks like a word space, it could be any length, don't worry about how long it is */
 		} else {
-		    var w_ies = 1.0 * detimer.n_ies / (d_ies*d_ies);
-		    var w_ils = 1.0 * detimer.n_ils / (d_ils*d_ils);
+		    var w_ies = 1.0 * self.n_ies / (d_ies*d_ies);
+		    var w_ils = 1.0 * self.n_ils / (d_ils*d_ils);
 		    var wt = w_ies + w_ils;
 		    var update = (o_ies * w_ies + o_ils * w_ils) / wt;
 		    //console.log("o_ies="+o_ies+", w_ies="+w_ies+", o_ils="+o_ils+", w_ils="+w_ils+", wt="+wt);
-		    //console.log("update="+update+", estimate="+detimer.estimate);
-		    detimer.estimate += update;
-		    detimer.estimate /= 2;
-		    detimer.wpm = (context.sampleRate * 60) / (detimer.estimage * detimer.word);
-		    guess = 100 * observation / detimer.estimate;
+		    //console.log("update="+update+", estimate="+self.estimate);
+		    self.estimate += update;
+		    self.estimate /= 2;
+		    self.wpm = (context.sampleRate * 60) / (self.estimage * self.word);
+		    guess = 100 * observation / self.estimate;
 		}
 		if (guess < 200) {
-		    detimer.n_ies += 1; return '';
+		    self.n_ies += 1; return '';
 		} else if (guess < 500) {
-		    detimer.n_ils += 1; return ' ';
+		    self.n_ils += 1; return ' ';
 		} else {
-		    detimer.n_iws += 1; return '\t';
+		    self.n_iws += 1; return '\t';
 		}
 	    }
 	},
 	elementConsumer : null,
 	setElementConsumer : function(elementConsumer) {
-	    detimer.elementConsumer = elementConsumer;
+	    self.elementConsumer = elementConsumer;
 	},
 	element : function(element, timeEnded) {
-	    if (detimer.elementConsumer) detimer.elementConsumer.element(element, timeEnded);
+	    if (self.elementConsumer) self.elementConsumer.element(element, timeEnded);
 	},
 	transition : function(onoff, time) {
-	    detimer.element(detimer.detime_process(onoff, time), time);
+	    self.element(self.detime_process(onoff, time), time);
 	},
     }
-    detimer.configure(15, 50);	// this is part suggestion (15 wpm) and part routine (50 dits/word is PARIS)
-    return detimer;
+    self.configure(15, 50);	// this is part suggestion (15 wpm) and part routine (50 dits/word is PARIS)
+    return self;
 }
 
 // translate dit dah strings to text
 function morse_code_decode(context) {
-    var decoder = {
+    var self = {
 	table : null,
 	elements : [],
 	elementTimeout : null,
 	elementTimeoutFun : function() {
-	    decoder.elementTimeout = null;
-	    if (decoder.elements.length > 0) {
-		var code = decoder.elements.join('');
-		decoder.letter(decoder.table.decode(code), code);
-		decoder.elements = [];
+	    self.elementTimeout = null;
+	    if (self.elements.length > 0) {
+		var code = self.elements.join('');
+		self.letter(self.table.decode(code), code);
+		self.elements = [];
 	    }
 	},
 	element : function(elt, timeEnded) {
-	    if (decoder.elementTimeout) {
-		clearTimeout(decoder.elementTimeout);
-		decoder.elementTimeout = null;
+	    if (self.elementTimeout) {
+		clearTimeout(self.elementTimeout);
+		self.elementTimeout = null;
 	    }
 	    if (elt == '') {
 		return;
 	    }
 	    if (elt == '.' || elt == '-') {
-		decoder.elements.push(elt);
-		decoder.elementTimeout = setTimeout(decoder.elementTimeoutFun, 1000*(timeEnded-context.currentTime)+250)
+		self.elements.push(elt);
+		self.elementTimeout = setTimeout(self.elementTimeoutFun, 1000*(timeEnded-context.currentTime)+250)
 		return;
 	    }
-	    if (decoder.elements.length > 0) {
-		var code = decoder.elements.join('');
-		decoder.letter(decoder.table.decode(code), code);
-		decoder.elements = [];
+	    if (self.elements.length > 0) {
+		var code = self.elements.join('');
+		self.letter(self.table.decode(code), code);
+		self.elements = [];
 	    }
 	    if (elt == '\t') {
-		decoder.letter(' ', elt);
+		self.letter(' ', elt);
 	    }
 	},
 	letterConsumer : null,
 	setLetterConsumer : function(letterConsumer) {
-	    decoder.letterConsumer = letterConsumer;
+	    self.letterConsumer = letterConsumer;
 	},
 	letter : function(ltr, code) {
-	    if (decoder.letterConsumer) decoder.letterConsumer(ltr, code);
+	    // generate the unicode for 'white square' if undefined or null
+	    if (self.letterConsumer) self.letterConsumer(ltr || '\u25a1', code);
 	    // console.log("letter('"+ltr+"', '"+code+"')");
 	},
     };
-    return decoder;
+    return self;
 }
 
 // translate iambic paddle events into keyup/keydown events
@@ -664,7 +693,7 @@ function morse_code_iambic_keyer(player) {
 
     function make_dit() { transition(DIT, _perDit); }
     function make_dah() { transition(DAH, _perDah); }
-    var keyer = {
+    var self = {
 	clock : function(raw_dit_on, raw_dah_on, ticks) {
 	    var dit_on = _swapped ? raw_dah_on : raw_dit_on;
 	    var dah_on = _swapped ? raw_dit_on : raw_dah_on;
@@ -713,125 +742,126 @@ function morse_code_iambic_keyer(player) {
 	getIes : function() { return _iesLen; }
     };
     update();
-    return keyer;
+    return self;
 }
 
 function morse_code_straight_input(context) {
-    var straight = {
+    var self = {
 	player : morse_code_player(context),
-	setPitch : function(hertz) { straight.player.setPitch(hertz); },
-	setGain : function(gain) { straight.player.setGain(gain); },
-	setOnTime : function(seconds) { straight.player.setOnTime(seconds); },
-	setOffTime : function(seconds) { straight.player.setOffTime(seconds); },
-	connect : function(target) { straight.player.connect(target); },
+	setPitch : function(hertz) { self.player.setPitch(hertz); },
+	setGain : function(gain) { self.player.setGain(gain); },
+	setOnTime : function(seconds) { self.player.setOnTime(seconds); },
+	setOffTime : function(seconds) { self.player.setOffTime(seconds); },
+	connect : function(target) { self.player.connect(target); },
 	raw_key_on : false,
 	isOn : false,
 	on : function() {
-	    straight.raw_key_on = true;
-	    if ( ! straight.isOn) {
-		straight.player.onAt(straight.player.getCursor());
-		straight.isOn = true;
+	    self.raw_key_on = true;
+	    if ( ! self.isOn) {
+		self.player.onAt(self.player.getCursor());
+		self.isOn = true;
 	    }
 	},
 	off : function() {
-	    straight.raw_key_on = false;
-	    if (straight.isOn) {
-		straight.player.offAt(straight.player.getCursor());
-		straight.isOn = false;
+	    self.raw_key_on = false;
+	    if (self.isOn) {
+		self.player.offAt(self.player.getCursor());
+		self.isOn = false;
 	    }
 	},
 	onfocus : function() { },
-	onblur : function() { straight.off(); },
+	onblur : function() { self.off(); },
 	// handlers for key events
-	onkeydown : function(event) { straight.on(); },
-	onkeyup : function(event) { straight.off(); },
+	onkeydown : function(event) { self.on(); },
+	onkeyup : function(event) { self.off(); },
 	// handlers for two button mouse
-	onmousedown : function(event) { straight.on(); },
-	onmouseup : function(event) { straight.off(); },
+	onmousedown : function(event) { self.on(); },
+	onmouseup : function(event) { self.off(); },
 	// handlers for MIDI
 	onmidievent : function(event) {
 	    if (event.data.length == 3) {
 		// console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
 		switch (event.data[0]&0xF0) {
-		case 0x90: straight.on(); break;
-		case 0x80: straight.off(); break;
+		case 0x90: self.on(); break;
+		case 0x80: self.off(); break;
 		}
 	    }
 	},
     };
-    return straight;
+    return self;
 }
 
 function morse_code_iambic_input(context) {
-    var iambic = {
+    var self = {
 	player : morse_code_player(context),
 	keyer : null,
-	setPitch : function(hertz) { iambic.player.setPitch(hertz); },
-	setGain : function(gain) { iambic.player.setGain(gain); },
-	setOnTime : function(seconds) { iambic.player.setOnTime(seconds); },
-	setOffTime : function(seconds) { iambic.player.setOffTime(seconds); },
-	setWPM : function(wpm) { iambic.keyer.setWpm(wpm); },
-	setDah : function(dah) { iambic.keyer.setDah(dah); },
-	setIes : function(ies) { iambic.keyer.setIes(ies); },
-	connect : function(target) { iambic.player.connect(target); },
+	setPitch : function(hertz) { self.player.setPitch(hertz); },
+	setGain : function(gain) { self.player.setGain(gain); },
+	setOnTime : function(seconds) { self.player.setOnTime(seconds); },
+	setOffTime : function(seconds) { self.player.setOffTime(seconds); },
+	setWPM : function(wpm) { self.keyer.setWpm(wpm); },
+	setDah : function(dah) { self.keyer.setDah(dah); },
+	setIes : function(ies) { self.keyer.setIes(ies); },
+	setSwapped : function(swapped) { self.keyer.setSwapped(swapped); },
+	connect : function(target) { self.player.connect(target); },
 
 	raw_dit_on : false,
 	raw_dah_on : false,
 	// handlers for focus
-	onfocus : function() { iambic.start(); },
-	onblur : function() { iambic.stop(); },
+	onfocus : function() { self.start(); },
+	onblur : function() { self.stop(); },
 	// handlers for key events
-	onkeydown : function(event) { iambic.keydown((event.keyCode&1)==0); },
-	onkeyup : function(event) { iambic.keyup((event.keyCode&1)==0); },
+	onkeydown : function(event) { self.keydown((event.keyCode&1)==0); },
+	onkeyup : function(event) { self.keyup((event.keyCode&1)==0); },
 	// handlers for two button mouse
-	onmousedown : function(event) { iambic.keydown(event.button == 0); },
-	onmouseup : function(event) { iambic.keyup(event.button == 0); },
+	onmousedown : function(event) { self.keydown(event.button == 0); },
+	onmouseup : function(event) { self.keyup(event.button == 0); },
 	// handlers for MIDI
 	onmidievent : function(event) {
 	    if (event.data.length == 3) {
 		// console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
 		switch (event.data[0]&0xF0) {
-		case 0x90: iambic.keydown(event.data[1]&1); break;
-		case 0x80: iambic.keyup(event.data[1]&1); break;
+		case 0x90: self.keydown(event.data[1]&1); break;
+		case 0x80: self.keyup(event.data[1]&1); break;
 		}
 	    }
 	},
 	// common handlers
 	keydown : function(key) {
-	    if (key) iambic.raw_dit_on = true; else iambic.raw_dah_on = true;
-	    iambic.intervalFunction();
+	    if (key) self.raw_dit_on = true; else self.raw_dah_on = true;
+	    self.intervalFunction();
 	},
 	keyup : function(key) {
-	    if (key) iambic.raw_dit_on = false; else iambic.raw_dah_on = false;
-	    iambic.intervalFunction();
+	    if (key) self.raw_dit_on = false; else self.raw_dah_on = false;
+	    self.intervalFunction();
 	},
 	intervalLast : context.currentTime,
 	intervalFunction : function() {
 	    var time = context.currentTime;
-	    var tick = time - iambic.intervalLast;
-	    iambic.intervalLength = (iambic.intervalLength + tick) / 2;
-	    iambic.intervalLast = time;
-	    iambic.keyer.clock(iambic.raw_dit_on, iambic.raw_dah_on, tick);
+	    var tick = time - self.intervalLast;
+	    self.intervalLength = (self.intervalLength + tick) / 2;
+	    self.intervalLast = time;
+	    self.keyer.clock(self.raw_dit_on, self.raw_dah_on, tick);
 	},
 	interval : null,
 	start : function() {
-	    if (iambic.interval) {
-		iambic.stop();
+	    if (self.interval) {
+		self.stop();
 	    }
-	    iambic.interval = setInterval(iambic.intervalFunction, 1);
+	    self.interval = setInterval(self.intervalFunction, 1);
 	},
 	stop : function() {
-	    if (iambic.interval) {
-		clearInterval(iambic.interval);
-		iambic.interval = null;
+	    if (self.interval) {
+		clearInterval(self.interval);
+		self.interval = null;
 	    }
-	    iambic.raw_dit_on = false;
-	    iambic.raw_dah_on = false;
-	    iambic.player.cancel();
+	    self.raw_dit_on = false;
+	    self.raw_dah_on = false;
+	    self.player.cancel();
 	}
     };
-    iambic.keyer = morse_code_iambic_keyer(iambic.player);
-    return iambic;
+    self.keyer = morse_code_iambice_keyer(self.player);
+    return self;
 }
 
 /*
@@ -848,7 +878,7 @@ function morse_code_iambic_input(context) {
 */
 
 function morse_code_midi_input() {
-    var midi = {
+    var self = {
 	midiOptions : { },
 	midi : null,  // global MIDIAccess object
 	onMIDIMessage : function ( event ) {
@@ -860,21 +890,21 @@ function morse_code_midi_input() {
 	},
 	onMIDISuccess : function( midiAccess ) {
 	    // console.log( "MIDI ready!" );
-	    midi.midi = midiAccess;
+	    self.midi = midiAccess;
 	},
 	onMIDIFailure : function(msg) {
 	    // console.log( "Failed to get MIDI access - " + msg );
 	},
 	names : function() {
 	    var names = [];
-	    if (midi.midi)
-		for (var x of midi.midi.inputs.values())
+	    if (self.midi)
+		for (var x of self.midi.inputs.values())
 		    names.push(x.name);
 	    return names;
 	},
 	connect : function(name, handler) {
-	    if (midi.midi) {
-		for (var x of midi.midi.inputs.values()) {
+	    if (self.midi) {
+		for (var x of self.midi.inputs.values()) {
 		    if (x.name == name) {
 			// console.log("installing handler for "+name);
 			x.onmidimessage = handler;
@@ -883,8 +913,8 @@ function morse_code_midi_input() {
 	    }
 	},
 	disconnect : function(name) {
-	    if (midi.midi) {
-		for (var x of midi.midi.inputs.values()) {
+	    if (self.midi) {
+		for (var x of self.midi.inputs.values()) {
 		    if (x.name == name) {
 			// console.log("uninstalling handler for "+name);
 			x.onmidimessage = null;
@@ -894,11 +924,11 @@ function morse_code_midi_input() {
 	},
     };
     if (navigator.requestMIDIAccess) {
-	navigator.requestMIDIAccess().then( midi.onMIDISuccess, midi.onMIDIFailure );
+	navigator.requestMIDIAccess().then( self.onMIDISuccess, self.onMIDIFailure );
     } else {
 	console.log("no navigator.requestMIDIAccess found");
     }
-    return midi;
+    return self;
 }
 
 //
@@ -910,60 +940,61 @@ function morse_code_touch_input() {
 
 // translate keyup/keydown into keyed oscillator sidetone
 function morse_code_input(context) {
-    var input = {
+    var self = {
 	straight : morse_code_straight_input(context),
 	iambic : morse_code_iambic_input(context),
 	setPitch : function(hertz) {
-	    input.straight.setPitch(hertz);
-	    input.iambic.setPitch(hertz);
+	    self.straight.setPitch(hertz);
+	    self.iambic.setPitch(hertz);
 	},
 	setGain : function(gain) {
-	    input.straight.setGain(gain);
-	    input.iambic.setGain(gain);
+	    self.straight.setGain(gain);
+	    self.iambic.setGain(gain);
 	},
 	setOnTime : function(seconds) {
-	    input.straight.setOnTime(seconds);
-	    input.iambic.setOnTime(seconds);
+	    self.straight.setOnTime(seconds);
+	    self.iambic.setOnTime(seconds);
 	},
 	setOffTime : function(seconds) {
-	    input.straight.setOffTime(seconds);
-	    input.iambic.setOffTime(seconds);
+	    self.straight.setOffTime(seconds);
+	    self.iambic.setOffTime(seconds);
 	},
-	setWPM : function(wpm) { input.iambic.setWPM(wpm); },
-	setDah : function(dah) { input.iambic.setDah(dah); },
-	setIes : function(ies) { input.iambic.setIes(ies); },
+	setWPM : function(wpm) { self.iambic.setWPM(wpm); },
+	setDah : function(dah) { self.iambic.setDah(dah); },
+	setIes : function(ies) { self.iambic.setIes(ies); },
+	setSwapped : function(swapped) { self.iambic.setSwapped(swapped); },
 	connect : function(target) {
-	    input.straight.connect(target);
-	    input.iambic.connect(target);
+	    self.straight.connect(target);
+	    self.iambic.connect(target);
 	},
     };
-    return input;
+    return self;
 }
 
 // combine inputs and outputs
 function morse_code_station() {
     var context = new (window.AudioContext || window.webkitAudioContext)();
 
-    var station = {
+    var self = {
 	key_type : null,
 	key_type_select : function(key_type) {
-            if (station.key_type) station.input[station.key_type].onblur();
-	    station.key_type = key_type;
-	    station.input.onfocus=station.input[key_type].onfocus;
-	    station.input.onblur=station.input[key_type].onblur;
-	    station.input.onkeydown=station.input[key_type].onkeydown;
-	    station.input.onkeyup=station.input[key_type].onkeyup;
-	    station.input.onmousedown=station.input[key_type].onmousedown;
-	    station.input.onmouseup=station.input[key_type].onmouseup;
-	    station.input.onmidievent=station.input[key_type].onmidievent;
-	    if (station.key_input) key_input_select(station.key_input);
+            if (self.key_type) self.input[self.key_type].onblur();
+	    self.key_type = key_type;
+	    self.input.onfocus=self.input[key_type].onfocus;
+	    self.input.onblur=self.input[key_type].onblur;
+	    self.input.onkeydown=self.input[key_type].onkeydown;
+	    self.input.onkeyup=self.input[key_type].onkeyup;
+	    self.input.onmousedown=self.input[key_type].onmousedown;
+	    self.input.onmouseup=self.input[key_type].onmouseup;
+	    self.input.onmidievent=self.input[key_type].onmidievent;
+	    if (self.key_input) key_input_select(self.key_input);
 	},
 	key_input : null,
 	key_input_select : function(key_input) {
-	    if (station.key_input != key_input)
-		station.midi_key.disconnect(station.key_input)
-	    station.key_input = key_input;
-	    station.midi_key.connect(key_input, station.input.onmidievent)
+	    if (self.key_input != key_input)
+		self.midi_key.disconnect(self.key_input)
+	    self.key_input = key_input;
+	    self.midi_key.connect(key_input, self.input.onmidievent)
 	},
 	output : morse_code_output(context),
 	output_detimer : morse_code_detime(context),
@@ -976,21 +1007,21 @@ function morse_code_station() {
 	touch_key : morse_code_touch_input(),
     };
 
-    station.output.connect(context.destination);
-    station.output.player.setTransitionConsumer(station.output_detimer);
+    self.output.connect(context.destination);
+    self.output.player.setTransitionConsumer(self.output_detimer);
 
-    station.output_detimer.setElementConsumer(station.output_decoder);
+    self.output_detimer.setElementConsumer(self.output_decoder);
 
-    station.input.connect(context.destination);
+    self.input.connect(context.destination);
 
-    station.input.straight.player.setTransitionConsumer(station.input_detimer);
-    station.input.iambic.player.setTransitionConsumer(station.input_detimer);
+    self.input.straight.player.setTransitionConsumer(self.input_detimer);
+    self.input.iambic.player.setTransitionConsumer(self.input_detimer);
 
-    station.input_detimer.setElementConsumer(station.input_decoder);
+    self.input_detimer.setElementConsumer(self.input_decoder);
 
-    var table = station.output.table;
-    station.output_decoder.table = table;
-    station.input_decoder.table = table;
+    var table = self.output.table;
+    self.output_decoder.table = table;
+    self.input_decoder.table = table;
 
-    return station;
+    return self;
 }

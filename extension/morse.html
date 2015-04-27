@@ -67,6 +67,11 @@
 	  if (checked) set_item_checked('key_input', checked);
 	}
       }
+      function input_swap_paddles() {
+        var value = find_item_checked('input_swap') == 1;
+        // console.log("input_swap_paddles "+value);
+        station.input.setSwapped(value);
+      }
       function slider(id, min, max, value, units, target) {
         // console.log("slider("+id+")");
         var inputid = id+"_input";
@@ -175,8 +180,8 @@
 	<div class="column-3-right">
 	  <h2>Key Input</h2>
 	  <form id="key_input" onchange="key_input_select()">
-	    <input type="radio" name="key_input" value="keyboard" align="left" checked>Keyboard<br/>
-	    <input type='radio' name='key_input' value='mouse' align="left">Mouse<br/>
+	    <!-- <input type="radio" name="key_input" value="keyboard" align="left" checked>Keyboard<br/> -->
+	    <!-- <input type='radio' name='key_input' value='mouse' align="left">Mouse<br/> -->
 	    <!-- <input type="radio" name="key_input" value="touch" align="left">Touch<br/> -->
 	    <!-- append MIDI devices here
 		 <input type="radio" name="key_input" value="midi">MIDI<br/>
@@ -211,6 +216,9 @@
 	  <div id="input_speed"></div>
 	  <div id="input_rise_time"></div>
 	  <div id="input_fall_time"></div>
+	  <form id="input_swap" onchange="input_swap_paddles()">
+	    <input type="checkbox" name="input_swap" value="1">Swap Paddles</input>
+	  </form>
 	</div>
 	<div class="column-2-right">
 	  <h2>Output</h2>

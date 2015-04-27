@@ -10,7 +10,7 @@
 #define KEY_THRESHOLD  0x80
 #define KEY_HYSTERESIS 0x20
 
-#include <Teensy3Touch.h>
+#include "Teensy3Touch.h"
 #include "Keyer.h"
 
 void setupLED() {

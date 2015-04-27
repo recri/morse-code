@@ -30,25 +30,6 @@
 */
 
 //
-// a sorted word list with dits array
-//
-function sorted_word_list(name, words, dits, table) {
-    var word_list = {
-	length : words.length,
-	next_i : 0,
-	next : function(n) {
-	    n = Math.min(word_list.length-word_list.next_i, n);
-	    var next = new Array(n);
-	    for (var i = 0; i < n; i += 1) next[i] = words[word_list.next_i++];
-	    return next;
-	},
-	any_more : function() { return word_list.next_i < word_list.length; },
-	ditLength : function(word) { return table.ditLength(word); },
-    };
-    return word_list;
-}
-
-//
 // an arbitrary word list in any order
 //
 function word_list(name, words, table) {
@@ -62,14 +43,16 @@ function word_list(name, words, table) {
 	min : 0,
 	max : 0,
 	next_i : 0,
+	how_many_more : function() { return word_list.length - word_list.next_i; }
+	any_more : function() { return word_list.how_many_more() > 0; },
+	ditLength : function(word) { return table.ditLength(word); },
+	startAt : function(i) { word_list.next_i = i; },
 	next : function(n) {
 	    n = Math.min(word_list.length-word_list.next_i, n);
 	    var next = new Array(n);
 	    for (var i = 0; i < n; i += 1) next[i] = words[order[word_list.next_i++]];
 	    return next;
 	},
-	any_more : function() { return word_list.next_i < word_list.length; },
-	ditLength : function(word) { return table.ditLength(word); },
     };
     var dits = word_list.dits = new Uint8Array(word_list.length);
     var order = word_list.order = new Uint16Array(word_list.length);
@@ -515,3 +498,4 @@ function word_list_callsigns(table) {
 //
 // make the word_list for all combinations of characters sorted by dit length.
 //
+
