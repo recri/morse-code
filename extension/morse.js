@@ -860,7 +860,7 @@ function morse_code_iambic_input(context) {
 	    self.player.cancel();
 	}
     };
-    self.keyer = morse_code_iambice_keyer(self.player);
+    self.keyer = morse_code_iambic_keyer(self.player);
     return self;
 }
 

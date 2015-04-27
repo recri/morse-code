@@ -43,7 +43,7 @@ function word_list(name, words, table) {
 	min : 0,
 	max : 0,
 	next_i : 0,
-	how_many_more : function() { return word_list.length - word_list.next_i; }
+	how_many_more : function() { return word_list.length - word_list.next_i; },
 	any_more : function() { return word_list.how_many_more() > 0; },
 	ditLength : function(word) { return table.ditLength(word); },
 	startAt : function(i) { word_list.next_i = i; },
