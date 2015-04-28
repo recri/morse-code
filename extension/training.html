@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Morse Code Training</title>
+  </head>
+  <body onload="onLoadHandler()">
+    <script type="text/javascript" src="morse.js"></script>
+    <script type="text/javascript" src="words.js"></script>
+    <script type="text/javascript" src="progress.js"></script>
+    <script type="text/javascript">
+      var station;
+      function onLoadHandler() {
+        station = morse_code_station();
+        station.input_text = "";
+        station.output_text = "";
+        station.input_code = "";
+        station.output_code = "";
+        station.input_decoder.on('letter', function(ltr, code) {
+          station.input_text += ltr;
+          station.input_code += code;
+        });
+        station.output_decoder.on('letter', function(ltr, code) {
+          station.output_text += ltr;
+          station.output_code += code;
+        });
+
+	station.input.setPitch(550);
+        station.input.setGain(0.05);
+        station.input.setWPM(15);
+        station.input.setOnTime(0.004);
+        station.input.setOffTime(0.004);
+
+	station.output.setPitch(600);
+        station.output.setGain(0.05);
+        station.output.setWPM(15);
+        station.output.setOnTime(0.004);
+        station.output.setOffTime(0.004);
+        
+        station.key_type_select('iambic');
+        station.input.setSwapped(true);
+        station.output.send("vvv");
+      };
+    </script>
+    <style>
+      .page {
+	margin-left: auto;
+	margin-right: auto;
+        text-align: center;
+      }
+    </style>
+    <div class="page" id="page">
+      <h1>Morse Code Training</h1>
+      <input id="key_focus" type="image" src="paddle1.jpg" width="160px" height="120px" alt="iambic paddle"
+	     onfocus="station.input.onfocus()" onblur="station.input.onblur()"
+	     onkeydown="station.input.onkeydown(event)" onkeyup="station.input.onkeyup(event)"
+	     onmousedown="station.input.onmousedown(event)" onmouseup="station.input.onmouseup(event)"
+	     oncontextmenu="return false">
+      </input>
+    </div>
+  </input>
+  </body>
+</html>
+
+

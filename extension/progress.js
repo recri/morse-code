@@ -58,7 +58,7 @@ function word_list_teach(word_list, tester, progress) {
     while (true) {
 	var words;
 	if (progress.needs_review)
-	    words = progress.worst(
+	    words = progress.worst(10);
 	// review or new study?
 	// if review, use progress.word_list.worst(N)
 	// if new study, pull word_list.next(N)
