@@ -10,8 +10,8 @@
   * translate text into morse code and send the code as a keyed tone
   * read various keying events and translate them into a keyed tone
   * translate keyed tones into morse code and into text
-  * communicate over the internet with morse code WebRTC
   * implement a simple morse code training game ala simple simon
+  * communicate over the internet with morse code WebRTC
 
 * the chrome extension
   The chrome extension sources are kept in the extension directory
