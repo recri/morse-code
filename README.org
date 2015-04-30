@@ -1,40 +1,41 @@
 * morse code
-  This repo contains a javascript implementation of morse code functions built for
-  Chrome and, possibly, forother modern browsers.
+  Welcome to your javascript toolkit for morse code.
 
-  It's main purpose is to improve my ability to copy and key morse code at useful
-  speeds.
+  These functions are built for and tested with Chrome on a
+  Chromebook.  They may, possibly, work with other modern browsers or
+  with Chrome in other host environments
 
-  * it translates text into morse code and sends the code as a keyed tone
-  * it reads keyup/keydown events and translates them into a keyed tone
-  * it translates keyed oscillator events back into morse code and text
-  * it generates arbitrary tests.
+  When fully implemented, this package will enable you to:
 
-  It should also be able to:
-  * listen to morse code as audio tones and translate into text
-  * receive keying events from a MIDI device
-  but those functions do not work at present.
+  * translate text into morse code and send the code as a keyed tone
+  * read various keying events and translate them into a keyed tone
+  * translate keyed tones into morse code and into text
+  * communicate over the internet with morse code WebRTC
+  * implement a simple morse code training game ala simple simon
 
 * the chrome extension
-  The chrome extension sources are kept in the extension directory which has its
-  own README file to explain how the sources work.
+  The chrome extension sources are kept in the extension directory
+  which has its own README file to explain how the sources work.
 
-  The demo can be run from [[http://rawgit.com/recri/morse-code/master/extension/morse.html]].
+  The demos can be run directly from [[http://rawgit.com/recri/morse-code/master/extension/index.html]].
 
 * the keyer accessories
-  Because keying morse code on a computer keyboard using the ALT and CTRL keys is
-  less than an optimal experience, I've built a few USB keyer accessories which
-  improve the experience.  These are programs for the Teensy varieties of Arduino
-  clones developed by http://pjrc.com/.
+  Keying morse code on a computer keyboard using the ALT and CTRL keys
+  is less than an optimal experience, I've built a few USB keyer
+  accessories which improve the experience.  These are programs for
+  the Teensy varieties of Arduino clones developed by http://pjrc.com/.
 
-  The SwitchKeyer is a program written for the Teensy 2.0 processor.  A mechanical key,
-  either a straight key or iambic paddle, plugs into the SwitchKeyer and it generates the
-  keyboard events for the Alt and Control keys over a USB Keyboard interface.  The Teensy
-  processor and key jack fit into a mini Altoids tin.
+  The SwitchKeyer is a program written for the Teensy 2.0 processor.
+  A mechanical key, either a straight key or iambic paddle, plugs into
+  the SwitchKeyer and it generates the keyboard events for the Alt and
+  Control keys over a USB Keyboard interface.  The Teensy processor
+  and key jack fit into a mini Altoids tin.
 
-  The TouchKeyer is a program written for the Teensy 3.1 processor.  It uses a pair
-  of touch sensitive paddles which generate the keyboard events for the Alt and Control
-  keys over a USB Keyboard interface.  The Teensy processor is sandwiched between two pieces
-  of perfboard which provide the substrate for the tocuch paddles.
+  The TouchKeyer is a program written for the Teensy 3.1 processor.
+  It uses a pair of touch sensitive paddles which generate the
+  keyboard events for the Alt and Control keys over a USB Keyboard
+  interface.  The Teensy processor is sandwiched between two pieces of
+  perfboard which provide the substrate for the tocuch paddles.
 
-  These should be merged into a single accessory which serves both purposes at some point.
+  These should be merged into a single accessory which serves both
+  purposes at some point, perhaps with additional functionality.

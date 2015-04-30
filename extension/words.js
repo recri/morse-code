@@ -498,4 +498,49 @@ function word_list_callsigns(table) {
 //
 // make the word_list for all combinations of characters sorted by dit length.
 //
+function word_list_comb(table) {
+    function isLetter(x) {
+	var ux = x.toUpperCase();
+	var lx = x.toLowerCase();
+	return ux != lx;
+    }
+    var MAX = 24;
+    var singles = [], words = [], made = {};
+    for (var i in table.code) {
+	// console.log("letter "+i+" in table.code is "+table.code[i]);
+	singles.push(i);
+	words.push(i);
+	made[i] = true;
+    }
+    // console.log("starting comb loop with "+words.length+" words");
+    var nsing = singles.length;
+    while (true) {
+	var nwords = words.length;
+	for (var i = 0; i < nsing; i += 1) {
+	    var iword = singles[i];
+	    if ( ! isLetter(iword)) continue;
+	    var ilen = table.ditLength(iword);
+	    for (var j = 0; j < nwords; j += 1) {
+		var jword = words[j];
+		if ( ! isLetter(jword)) continue;
+		var jlen = table.ditLength(jword);
+		if (ilen+2+jlen < MAX) {
+		    if (! made[iword+jword]) {
+			// console.log("make "+iword+jword);
+			words.push(iword+jword);
+			made[iword+jword] = true;
+		    }
+		    if (! made[jword+iword]) {
+			// console.log("make "+jword+iword);
+			words.push(jword+iword);
+			made[jword+iword] = true;
+		    }
+		}
+	    }
+	}
+	if (nwords == words.length) break;
+	// console.log("added "+(words.length-nwords)+" words, "+words.length+" total");
+    }
+    return word_list('comb', words, table);
+}
 

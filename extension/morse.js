@@ -1069,9 +1069,9 @@ function morse_code_station() {
 
     self.input_detimer.on('element', self.input_decoder.onelement);
 
-    var table = self.output.table;
-    self.output_decoder.table = table;
-    self.input_decoder.table = table;
+    self.table = self.output.table;
+    self.output_decoder.table = self.table;
+    self.input_decoder.table = self.table;
 
     return self;
 }
