@@ -1,0 +1,21 @@
+* Items to be done here
+** Overall
+*** Adopt the html5boilerplate to cover all the issues I haven't discovered let alone solved
+** Output
+*** Slow down element encoding so the decoding will happen with the audio
+** Input
+*** Detect touchscreen and implement buttons sensitive to touchstart/touchend
+*** Get rid of focus input element, put listeners on html element
+** Audio decoder
+*** acquire an audio input channel
+*** set up a binary search of Goertzel filters to find active cw channels
+*** create a Goertzel filter for each active cw channel
+*** decode each channel
+*** maybe display fft and waterfall for audio channel
+** Trainer
+*** Determine new/review/mixed session structure
+*** Flashy graphics for progress through session
+*** Flashy graphics for cumulative progress over sessions
+*** Select training set
+*** Persist progress between sessions
+** WebRTC
