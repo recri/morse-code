@@ -7,80 +7,24 @@
     <script type="text/javascript" src="morse.js"></script>
     <script type="text/javascript">
       var station = morse_code_station();
-      station.input_decoder.on('letter', function(ltr, code) {
-        var elt = document.getElementById("input_text");
-        elt.textContent += ltr;
-        elt.scrollTop = 1000;
-      });
       station.output_decoder.on('letter', function(ltr, code) {
         var elt = document.getElementById("output_text");
         elt.textContent += ltr;
         elt.scrollTop = 1000;
       });
-      function find_item_checked(name) {
-        var radios = document.getElementsByName(name);
-        for (var i in radios)
-          if (radios[i].checked)
-	    return radios[i].value;
-        return null;
-      }
-      function set_item_checked(name, value) {
-        var radios = document.getElementsByName(name);
-        for (var i in radios)
-          radios[i].checked = (radios[i].value == value);
-      }
-      function key_type_select() {
-        var name = 'key_type';
-        var key_type = find_item_checked(name);
-        if (key_type != station.key_type) {
-          // adapt front end: image and handlers
-          var i = document.getElementById('key_focus')
-          if (key_type == 'straight') {
-            i.src = "straight2.jpg";
-            i.alt = "straight telegraph key";
-          } else {
-            i.src = "paddle1.jpg";
-            i.alt = "iambic paddle key";
-          }
-          // let the back end adapt
-          station.key_type_select(key_type);
-        }
-      }
-      function key_input_select() {
-	station.key_input_select(find_item_checked('key_input'));
-      }
-      function key_input_regenerate_list() {
-        // try to preserve the selected value if possible
-        var key_input = document.getElementById('key_input');
-        var checked = find_item_checked('key_input');
-	if (key_input) {
-          key_input.innerHTML = "";
-	  // key_input.innerHTML += "<input type='radio' name='key_input' value='keyboard' align='left'>Keyboard<br/>";
-          // key_input.innerHTML += "<input type='radio' name='key_input' value='mouse align='left'>Mouse<br/>"
-          // key_input.innerHTML += "<input type='radio' name='key_input' value='touch' align='left'>Touch<br/>"
-          var names = station.midi_key.names();
-          for (var i in names) {
-	    // console.log("adding "+names[i]+" to midi inputs");
-            key_input.innerHTML += "<input type='radio' name='key_input' value='"+names[i]+"' align='left'>"+names[i]+"<br/>";
-          }
-	  if (checked) set_item_checked('key_input', checked);
-	}
-      }
-      function input_swap_paddles() {
-        var value = find_item_checked('input_swap') == 1;
-        // console.log("input_swap_paddles "+value);
-        station.input.setSwapped(value);
-      }
-      function slider(id, min, max, value, units, target) {
+      function slider(id, min, max, value, units, target, ident) {
         // console.log("slider("+id+")");
         var inputid = id+"_input";
         var valueid = id+"_value";
-	document.getElementById(id).innerHTML = '<input id="'+inputid+'"/><br/><span id="'+valueid+'"/>';
+        var identid = id+"_identity";
+	document.getElementById(id).innerHTML = '<span id="'+identid+'"></span><input id="'+inputid+'"></input><br/><span id="'+valueid+'"></span>';
         var inp = document.getElementById(inputid);
 	var val = document.getElementById(valueid);
+        var tag = document.getElementById(identid);
         inp.type = "range";
 	inp.min = min;
 	inp.max = max;
+        if (ident) tag.innerText = ident;
         var target_value = inp.value;
 	if (units == "dB") {
           inp.oninput = inp.onchange = function() {
@@ -101,19 +45,18 @@
 	inp.value = value;
         inp.onchange();
       };
+      function morse_code_send_text(id) {
+        var elt = document.getElementById(id);
+        var text = elt.value;
+        elt.value = "";
+        station.output.send(text);
+      }
       function onLoadHandler() {
-	slider("input_pitch", "220", "1760", "550", "Hz", station.input.setPitch);
-	slider("input_gain", "-60", "0", "-24", "dB", station.input.setGain);
-	slider("input_speed", "5", "30", "15", "WPM", station.input.setWPM);
-        slider("input_rise_time", "1", "10", "4", "ms", station.input.setOnTime)
-        slider("input_fall_time", "1", "10", "4", "ms", station.input.setOffTime)
-	slider("output_pitch", "220", "1760", "600", "Hz", station.output.setPitch);
-	slider("output_gain", "-60", "0", "-24", "dB", station.output.setGain);
-	slider("output_speed", "5", "30", "15", "WPM", station.output.setWPM);
-        slider("output_rise_time", "1", "10", "4", "ms", station.output.setOnTime)
-        slider("output_fall_time", "1", "10", "4", "ms", station.output.setOffTime)
-        key_input_regenerate_list();
-        key_type_select();
+	slider("output_pitch", "220", "1760", "600", "Hz", station.output.setPitch, "  Pitch  ");
+	slider("output_gain", "-60", "0", "-24", "dB", station.output.setGain, "  Gain  ");
+	slider("output_speed", "5", "30", "15", "WPM", station.output.setWPM, "  Speed  ");
+        slider("output_rise_time", "1", "10", "4", "ms", station.output.setOnTime, "  Rise  ")
+        slider("output_fall_time", "1", "10", "4", "ms", station.output.setOffTime, "  Fall  ")
       };
     </script>
     <style>
@@ -129,108 +72,66 @@
 	width: 100%;
         text-align: center;
       }
-      .column-2-right {
-	float: right;
-	width: 50%;
-        text-align: center;
-      }
-      .column-2-left {
-	float: left;
-	width: 50%;
-        text-align: center;
-      }
-      #input_text, #output_text {
+      #output_text {
 	height:240px;
 	width:75%;
 	border:1px solid #ccc;
 	font:16px/26px Georgia, Garamond, Serif;
 	overflow:auto;
       }
-      #key_type, #key_input {
+      .text {
+	margin-left: auto;
+	margin-right: auto;
+	width: 100%;
         text-align: left;
       }
-      #key_focus {
-        border:5px;
-      }
-      .column-3-left { float: left; width: 33%; }
-      .column-3-right { float: right; width: 33%; }
-      .column-3-center { display: inline-block; width: 33%; }
     </style>
     <div class="page">
-      <h1>Morse Code Take 2</h1>
+      <h1>Morse Code Output</h1>
       <div class="center">
-	<div class="column-3-left">
-	  <h2>Key Type</h2>
-	  <form id="key_type" onchange="key_type_select()">
-	    <input type="radio" name="key_type" value="straight" align="left">Straight Key<br/>
-	    <input type="radio" name="key_type" value="iambic" align="left" checked>Iambic Key<br/>
-	  </form>
-	</div>
-	<div class="column-3-center" oncontextmenu="return false">
-	  <h2>Key Focus</h2>
-	  <!-- alternate straight2.jpg -->
-	  <input id="key_focus" type="image" src="paddle1.jpg" width="160px" height="120px" alt="iambic paddle"
-	         onfocus="station.input.onfocus()" onblur="station.input.onblur()"
-		 onkeydown="station.input.onkeydown(event)" onkeyup="station.input.onkeyup(event)"
-		 onmousedown="station.input.onmousedown(event)" onmouseup="station.input.onmouseup(event)"
-		 oncontextmenu="return false"
-		 </input>
-	</div>
-	<div class="column-3-right">
-	  <h2>Key Input</h2>
-	  <form id="key_input" onchange="key_input_select()">
-	    <!-- <input type="radio" name="key_input" value="keyboard" align="left" checked>Keyboard<br/> -->
-	    <!-- <input type='radio' name='key_input' value='mouse' align="left">Mouse<br/> -->
-	    <!-- <input type="radio" name="key_input" value="touch" align="left">Touch<br/> -->
-	    <!-- append MIDI devices here
-		 <input type="radio" name="key_input" value="midi">MIDI<br/>
-		 -->
-	  </form>
-	  <form id="recheck_midi">
-	    <button type="button" onclick="key_input_regenerate_list()">Recheck MIDI</button>
-	  </form>
-	    <!--
-	  <h2>Decoders</h2>
-	  <form id="decoders" onchange="decoders_select()">
-	    <input type="checkbox" name="decoders" value="input">Input<br/>
-	    <input type="checkbox" name="decoders" value="output">Output<br/>
-	    <input type="checkbox" name="decoders" value="microphone">Microphone<br/>
-	  </form>
-	  -->
-	</div>
-	<div class="column-2-left">
-	  <h2>Output Text</h2>
-	  <div id="output_text" class="center"></div>
-	  <button onclick="document.getElementById('output_text').innerHTML = ''">Clear Output</button>
-	</div>
-	<div class="column-2-right">
-	  <h2>Input Text</h2>
-	  <div id="input_text" class="center"></div>
-	  <button onclick="document.getElementById('input_text').innerHTML = ''">Clear Input</button>
-	</div>
-	<div class="column-2-left">
-	  <h2>Input</h2>
-	  <div id="input_pitch"></div>
-	  <div id="input_gain"></div>
-	  <div id="input_speed"></div>
-	  <div id="input_rise_time"></div>
-	  <div id="input_fall_time"></div>
-	  <form id="input_swap" onchange="input_swap_paddles()">
-	    <input type="checkbox" name="input_swap" value="1">Swap Paddles</input>
-	  </form>
-	</div>
-	<div class="column-2-right">
-	  <h2>Output</h2>
-	  <div id="output_pitch"></div>
-	  <div id="output_gain"></div>
-	  <div id="output_speed"></div>
-	  <div id="output_rise_time"></div>
-	  <div id="output_fall_time"></div>
-	</div>
+	<h2>Text to Output</h2>
+	<form>
+	  <input id="text" type="text" size="32" onkeydown="if (event.keyCode == 13) { morse_code_send_text('text'); return false; }"></input>
+	  <input type="button" value="Send" onclick="morse_code_send_text('text')"></input>
+	</form>
+      </div>
+      <div class="center">
+	<h2>Output Text Decoded</h2>
+	<div id="output_text" class="center"></div>
+	<button onclick="document.getElementById('output_text').innerHTML = ''">Clear Output</button>
+      </div>
+      <div class="center">
+	<h2>Parameters</h2>
+	<div id="output_pitch"></div>
+	<div id="output_gain"></div>
+	<div id="output_speed"></div>
+	<div id="output_rise_time"></div>
+	<div id="output_fall_time"></div>
+      </div>
+      <div class="text">
+	<p>
+	  The <b>pitch</b> refers to the frequency of the tone
+	  measuered in Hertz.
+	</p><p>
+	  The <b>gain</b> is the volume level of the tone produced
+	  measured in decibels below the maximum.
+	</p><p>
+	  The <b>speed</b> is given in units of words per minute (WPM).  A
+	  average word is taken as 50 (or 60) dits in length in the
+	  easier (or more difficult) formulation.  Thus 15 WPM comes
+	  to 750 dits per minute, 12.5 dits per second, or about 80
+	  milliseconds per dit.
+	</p><p>
+	  The <b>rise</b> and <b>fall</b> define the steepness of the
+	  keying envelope in milliseconds.  
+	</p><p>
+	  The plan for this page was that the <b>Output Text
+	  Decoded</b> would display text as it was sounded.  But I
+	  will need to insert some sort of governor to prevent the
+	  audio generation from running so far ahead of what is being
+	  played.
+	</p>
       </div>
     </div>
-  </input>
   </body>
 </html>
-
-

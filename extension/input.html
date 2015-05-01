@@ -12,11 +12,6 @@
         elt.textContent += ltr;
         elt.scrollTop = 1000;
       });
-      station.output_decoder.on('letter', function(ltr, code) {
-        var elt = document.getElementById("output_text");
-        elt.textContent += ltr;
-        elt.scrollTop = 1000;
-      });
       function find_item_checked(name) {
         var radios = document.getElementsByName(name);
         for (var i in radios)
@@ -71,16 +66,19 @@
         // console.log("input_swap_paddles "+value);
         station.input.setSwapped(value);
       }
-      function slider(id, min, max, value, units, target) {
+      function slider(id, min, max, value, units, target, ident) {
         // console.log("slider("+id+")");
         var inputid = id+"_input";
         var valueid = id+"_value";
-	document.getElementById(id).innerHTML = '<input id="'+inputid+'"/><br/><span id="'+valueid+'"/>';
+        var identid = id+"_identity";
+	document.getElementById(id).innerHTML = '<span id="'+identid+'"></span><input id="'+inputid+'"></input><br/><span id="'+valueid+'"></span>';
         var inp = document.getElementById(inputid);
 	var val = document.getElementById(valueid);
+        var tag = document.getElementById(identid);
         inp.type = "range";
 	inp.min = min;
 	inp.max = max;
+        if (ident) tag.innerText = ident;
         var target_value = inp.value;
 	if (units == "dB") {
           inp.oninput = inp.onchange = function() {
@@ -102,16 +100,11 @@
         inp.onchange();
       };
       function onLoadHandler() {
-	slider("input_pitch", "220", "1760", "550", "Hz", station.input.setPitch);
-	slider("input_gain", "-60", "0", "-24", "dB", station.input.setGain);
-	slider("input_speed", "5", "30", "15", "WPM", station.input.setWPM);
-        slider("input_rise_time", "1", "10", "4", "ms", station.input.setOnTime)
-        slider("input_fall_time", "1", "10", "4", "ms", station.input.setOffTime)
-	slider("output_pitch", "220", "1760", "600", "Hz", station.output.setPitch);
-	slider("output_gain", "-60", "0", "-24", "dB", station.output.setGain);
-	slider("output_speed", "5", "30", "15", "WPM", station.output.setWPM);
-        slider("output_rise_time", "1", "10", "4", "ms", station.output.setOnTime)
-        slider("output_fall_time", "1", "10", "4", "ms", station.output.setOffTime)
+	slider("input_pitch", "220", "1760", "550", "Hz", station.input.setPitch, "  Pitch  ");
+	slider("input_gain", "-60", "0", "-24", "dB", station.input.setGain, "  Gain  ");
+	slider("input_speed", "5", "30", "15", "WPM", station.input.setWPM, "  Speed  ");
+        slider("input_rise_time", "1", "10", "4", "ms", station.input.setOnTime, "  Rise  ");
+        slider("input_fall_time", "1", "10", "4", "ms", station.input.setOffTime, "  Fall  ");
         key_input_regenerate_list();
         key_type_select();
       };
@@ -147,7 +140,6 @@
 	overflow:auto;
       }
       #key_type, #key_input {
-        text-align: left;
       }
       #key_focus {
         border:5px;
@@ -157,79 +149,52 @@
       .column-3-center { display: inline-block; width: 33%; }
     </style>
     <div class="page">
-      <h1>Morse Code Take 2</h1>
+      <h1>Morse Code Input</h1>
       <div class="center">
-	<div class="column-3-left">
-	  <h2>Key Type</h2>
-	  <form id="key_type" onchange="key_type_select()">
-	    <input type="radio" name="key_type" value="straight" align="left">Straight Key<br/>
-	    <input type="radio" name="key_type" value="iambic" align="left" checked>Iambic Key<br/>
-	  </form>
-	</div>
-	<div class="column-3-center" oncontextmenu="return false">
-	  <h2>Key Focus</h2>
-	  <!-- alternate straight2.jpg -->
-	  <input id="key_focus" type="image" src="paddle1.jpg" width="160px" height="120px" alt="iambic paddle"
-	         onfocus="station.input.onfocus()" onblur="station.input.onblur()"
-		 onkeydown="station.input.onkeydown(event)" onkeyup="station.input.onkeyup(event)"
-		 onmousedown="station.input.onmousedown(event)" onmouseup="station.input.onmouseup(event)"
-		 oncontextmenu="return false"
-		 </input>
-	</div>
-	<div class="column-3-right">
-	  <h2>Key Input</h2>
-	  <form id="key_input" onchange="key_input_select()">
-	    <!-- <input type="radio" name="key_input" value="keyboard" align="left" checked>Keyboard<br/> -->
-	    <!-- <input type='radio' name='key_input' value='mouse' align="left">Mouse<br/> -->
-	    <!-- <input type="radio" name="key_input" value="touch" align="left">Touch<br/> -->
-	    <!-- append MIDI devices here
-		 <input type="radio" name="key_input" value="midi">MIDI<br/>
-		 -->
-	  </form>
-	  <form id="recheck_midi">
-	    <button type="button" onclick="key_input_regenerate_list()">Recheck MIDI</button>
-	  </form>
-	    <!--
-	  <h2>Decoders</h2>
-	  <form id="decoders" onchange="decoders_select()">
-	    <input type="checkbox" name="decoders" value="input">Input<br/>
-	    <input type="checkbox" name="decoders" value="output">Output<br/>
-	    <input type="checkbox" name="decoders" value="microphone">Microphone<br/>
-	  </form>
-	  -->
-	</div>
-	<div class="column-2-left">
-	  <h2>Output Text</h2>
-	  <div id="output_text" class="center"></div>
-	  <button onclick="document.getElementById('output_text').innerHTML = ''">Clear Output</button>
-	</div>
-	<div class="column-2-right">
-	  <h2>Input Text</h2>
-	  <div id="input_text" class="center"></div>
-	  <button onclick="document.getElementById('input_text').innerHTML = ''">Clear Input</button>
-	</div>
-	<div class="column-2-left">
-	  <h2>Input</h2>
-	  <div id="input_pitch"></div>
-	  <div id="input_gain"></div>
-	  <div id="input_speed"></div>
-	  <div id="input_rise_time"></div>
-	  <div id="input_fall_time"></div>
-	  <form id="input_swap" onchange="input_swap_paddles()">
-	    <input type="checkbox" name="input_swap" value="1">Swap Paddles</input>
-	  </form>
-	</div>
-	<div class="column-2-right">
-	  <h2>Output</h2>
-	  <div id="output_pitch"></div>
-	  <div id="output_gain"></div>
-	  <div id="output_speed"></div>
-	  <div id="output_rise_time"></div>
-	  <div id="output_fall_time"></div>
-	</div>
+	<h2>Key Focus</h2>
+	<!-- alternate straight2.jpg -->
+	<input id="key_focus" type="image" src="paddle1.jpg" width="160px" height="120px" alt="iambic paddle"
+	       onfocus="station.input.onfocus()" onblur="station.input.onblur()"
+	       onkeydown="station.input.onkeydown(event)" onkeyup="station.input.onkeyup(event)"
+	       onmousedown="station.input.onmousedown(event)" onmouseup="station.input.onmouseup(event)"
+	       oncontextmenu="return false"
+	       </input>
+      </div>
+      <div class="center">
+	<h2>Input Text</h2>
+	<div id="input_text" class="center"></div>
+	<button onclick="document.getElementById('input_text').innerHTML = ''">Clear Input</button>
+      </div>
+      <div class="center">
+	<h2>Key Type</h2>
+	<form id="key_type" onchange="key_type_select()">
+	  <input type="radio" name="key_type" value="straight" align="left">Straight Key<br/>
+	  <input type="radio" name="key_type" value="iambic" align="left" checked>Iambic Key<br/>
+	</form>
+	<h2>MIDI Device</h2>
+	<form id="key_input" onchange="key_input_select()">
+	  <!-- <input type="radio" name="key_input" value="keyboard" align="left" checked>Keyboard<br/> -->
+	  <!-- <input type='radio' name='key_input' value='mouse' align="left">Mouse<br/> -->
+	  <!-- <input type="radio" name="key_input" value="touch" align="left">Touch<br/> -->
+	  <!-- append MIDI devices here
+	       <input type="radio" name="key_input" value="midi">MIDI<br/>
+	       -->
+	</form>
+	<form id="recheck_midi">
+	  <button type="button" onclick="key_input_regenerate_list()">Recheck MIDI</button>
+	</form>
+	  
+	<h2>Input</h2>
+	<div id="input_pitch"></div>
+	<div id="input_gain"></div>
+	<div id="input_speed"></div>
+	<div id="input_rise_time"></div>
+	<div id="input_fall_time"></div>
+	<form id="input_swap" onchange="input_swap_paddles()">
+	  <input type="checkbox" name="input_swap" value="1">Swap Paddles</input>
+	</form>
       </div>
     </div>
-  </input>
   </body>
 </html>
 
