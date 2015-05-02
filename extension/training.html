@@ -1,61 +1,16 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Morse Code Training</title>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+	<title>Morse Code Training</title>
+        <meta name="description" content="morse code training application">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="css/normalize.css">
+        <link rel="stylesheet" href="css/main.css">
+        <script src="js/vendor/modernizr-2.8.3.min.js"></script>
   </head>
   <body onload="onLoadHandler()">
-    <script type="text/javascript" src="morse.js"></script>
-    <script type="text/javascript" src="words.js"></script>
-    <script type="text/javascript" src="progress.js"></script>
-    <script type="text/javascript">
-      var station, progress;
-      
-      function onLoadHandler() {
-        function button_up(id) {
-          var e = document.getElementById(id)
-          if ('ontouchstart' in window) {
-	    /* browser with Touch Events running on touch-capable device */
-            e.ontouchstart=function(event) { station.input.ontouchstart(event, id); }
-            e.ontouchend=function(event) { station.input.ontouchend(event, id); };
-          } else {
-            e.onmousedown=function(event) { station.input.onmousedown(event, id); };
-            e.onmouseup=function(event) { station.input.onmouseup(event, id); };
-            e.oncontextmenu=function() { return false; };
-          }
-        }
-
-        station = morse_code_station();
-
-	station.input.setPitch(550);
-        station.input.setGain(0.05);
-        station.input.setWPM(15);
-        station.input.setOnTime(0.004);
-        station.input.setOffTime(0.004);
-
-	station.output.setPitch(600);
-        station.output.setGain(0.05);
-        station.output.setWPM(15);
-        station.output.setOnTime(0.004);
-        station.output.setOffTime(0.004);
-        
-        station.key_type_select('iambic');
-        station.input.setSwapped(true);
-
-        station.input.iambic.onfocus();
-
-        progress = study_progress(word_list_comb(station.table), station);
-        // progress.focus();
-
-        // keydown/keyup events on html element
-        var h = document.getElementsByTagName('html')[0];
-        h.onkeydown=function(event) { station.input.onkeydown(event); };
-        h.onkeyup=function(event) { station.input.onkeyup(event); };
-
-        button_up("key-button");
-        button_up("left-button");
-        button_up("right-button");
-      }
-    </script>
     <style>
       .page {
 	margin-left: auto;
@@ -80,7 +35,7 @@
     </style>
     <div class="page" id="page">
       <h1>Morse Code Training</h1>
-      <div>
+      <div id="training_controls">
  	<button onclick="progress.onnext()">Next</button>
 	<button onclick="progress.onagain()">Again</button>
 	<br/>
@@ -91,14 +46,8 @@
 	<button onclick="progress.onslower()">Slower</button>
 	<span id="speed">15</span>WPM
 	<button onclick="progress.onfaster()">Faster</button>
-	<div>
-	  <button class="button double" id="key-button"></button>
-	  <div>
-	    <button class="button single" id="left-button"></button>
-	    <button class="button single" id="right-button"></button>
-	    </div>
-	  <div>
       </div>
+      <div id="key_buttons"></div>
       <p>
 	Practice morse code by imitating the code sent by your computer.
       </p><p>
@@ -107,8 +56,44 @@
 	pressing the other will send a string of dahs,
 	and pressing both will send a string of di-dahs or dah-dits.
       </p>
-  </input>
   </body>
+    <script type="text/javascript" src="js/morse.js"></script>
+    <script type="text/javascript" src="js/words.js"></script>
+    <script type="text/javascript" src="js/progress.js"></script>
+    <script type="text/javascript">
+      var station, progress;
+
+      function onLoadHandler() {
+
+        station = morse_code_station();
+
+	station.input.setPitch(550);
+        station.input.setGain(0.05);
+        station.input.setWPM(15);
+        station.input.setOnTime(0.004);
+        station.input.setOffTime(0.004);
+
+	station.output.setPitch(600);
+        station.output.setGain(0.05);
+        station.output.setWPM(15);
+        station.output.setOnTime(0.004);
+        station.output.setOffTime(0.004);
+        
+        station.key_type_select('iambic');
+        station.input.setSwapped(true);
+
+        station.input.iambic.onfocus();
+
+        progress = study_progress(word_list_comb(station.table), station);
+        // progress.focus();
+
+        // keydown/keyup events on html element
+        morse_code_keyboard_input(station);
+
+        // touch/mouse events on key buttons
+        morse_code_touch_input('key_buttons', station);
+      }
+    </script>
 </html>
 
 

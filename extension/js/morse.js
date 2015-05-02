@@ -975,9 +975,38 @@ function morse_code_midi_input() {
 
 //
 function morse_code_keyboard_input() {
+    var h = document.getElementsByTagName('html')[0];
+    h.addEventListener('keydown', function(event) { station.input.onkeydown(event); });
+    h.addEventListener('keyup', function(event) { station.input.onkeyup(event); });
 }
 
-function morse_code_touch_input() {
+function morse_code_touch_input_html(button_div_id) {
+}
+
+function morse_code_touch_input(button_div_id, station) {
+    function button_up(id) {
+        var e = document.getElementById(id)
+        if ('ontouchstart' in window) {
+	    /* browser with Touch Events running on touch-capable device */
+            e.addEventListener('touchstart', function(event) { station.input.ontouchstart(event); });
+            e.addEventListener('touchend', function(event) { station.input.ontouchend(event); });
+        } else {
+            e.addEventListener('mousedown', function(event) { station.input.onmousedown(event); });
+            e.addEventListener('mouseup', function(event) { station.input.onmouseup(event); });
+            e.addEventListener('contextmenu', function() { return false; });
+        }
+    }
+    var d = document.getElementById(button_div_id);
+    console.log(d); console.log(d.innerHTML);
+    d.innerHTML = '<button class="button double" id="key-button"/>'+
+		  '<div>'+
+		    '<button class="button single" id="left-button"/>'+
+		    '<button class="button single" id="right-button"/>'+
+		  '</div>';
+    console.log(d); console.log(d.innerHTML);
+    button_up("key-button");
+    button_up("left-button");
+    button_up("right-button");
 }
 
 // translate keyup/keydown into keyed oscillator sidetone
