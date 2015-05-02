@@ -9,7 +9,21 @@
     <script type="text/javascript" src="progress.js"></script>
     <script type="text/javascript">
       var station, progress;
+      
       function onLoadHandler() {
+        function button_up(id) {
+          var e = document.getElementById(id)
+          if ('ontouchstart' in window) {
+	    /* browser with Touch Events running on touch-capable device */
+            e.ontouchstart=function(event) { station.input.ontouchstart(event, id); }
+            e.ontouchend=function(event) { station.input.ontouchend(event, id); };
+          } else {
+            e.onmousedown=function(event) { station.input.onmousedown(event, id); };
+            e.onmouseup=function(event) { station.input.onmouseup(event, id); };
+            e.oncontextmenu=function() { return false; };
+          }
+        }
+
         station = morse_code_station();
 
 	station.input.setPitch(550);
@@ -27,8 +41,19 @@
         station.key_type_select('iambic');
         station.input.setSwapped(true);
 
+        station.input.iambic.onfocus();
+
         progress = study_progress(word_list_comb(station.table), station);
-        progress.focus();
+        // progress.focus();
+
+        // keydown/keyup events on html element
+        var h = document.getElementsByTagName('html')[0];
+        h.onkeydown=function(event) { station.input.onkeydown(event); };
+        h.onkeyup=function(event) { station.input.onkeyup(event); };
+
+        button_up("key-button");
+        button_up("left-button");
+        button_up("right-button");
       }
     </script>
     <style>
@@ -37,25 +62,42 @@
 	margin-right: auto;
         text-align: center;
       }
+      button {
+        margin: 10px;
+      }
+      .button {
+        height: 80px;
+        -moz-border-radius: 10px;
+        -webkit-border-radius: 10px;
+        border-radius: 10px;
+      }
+      .button.double {
+        width: 160px;
+      }
+      .button.single {
+        width: 80px;
+      }
     </style>
     <div class="page" id="page">
-      <h1>Training at <span id="speed">15</span>WPM</h1>
-      <input id="key_focus" type="image" src="paddle1.jpg" width="160px" height="120px" alt="iambic paddle"
-	     onfocus="station.input.onfocus()" onblur="station.input.onblur()"
-	     onkeydown="station.input.onkeydown(event)" onkeyup="station.input.onkeyup(event)"
-	     onmousedown="station.input.onmousedown(event)" onmouseup="station.input.onmouseup(event)"
-	     oncontextmenu="return false">
-      </input>
+      <h1>Morse Code Training</h1>
       <div>
-	<input type="button" onclick="progress.onstart()" value="Start"></input>
-	<input type="button" onclick="progress.onrestart()" value="Restart"></input>
-	<input type="button" onclick="progress.onstop()" value="Stop"></input>
-	&nbsp;&nbsp;
-	<input type="button" onclick="progress.onnext()" value="Next"></input>
-	<input type="button" onclick="progress.onagain()" value="Again"></input>
-	&nbsp;&nbsp;
-	<input type="button" onclick="progress.onslower()" value="Slower"></input>
-	<input type="button" onclick="progress.onfaster()" value="Faster"></input>
+ 	<button onclick="progress.onnext()">Next</button>
+	<button onclick="progress.onagain()">Again</button>
+	<br/>
+	<button onclick="progress.onstart()">Start</button>
+	<button onclick="progress.onrestart()">Restart</button>
+	<button onclick="progress.onstop()">Stop</button>
+	<br/>
+	<button onclick="progress.onslower()">Slower</button>
+	<span id="speed">15</span>WPM
+	<button onclick="progress.onfaster()">Faster</button>
+	<div>
+	  <button class="button double" id="key-button"></button>
+	  <div>
+	    <button class="button single" id="left-button"></button>
+	    <button class="button single" id="right-button"></button>
+	    </div>
+	  <div>
       </div>
       <p>
 	Practice morse code by imitating the code sent by your computer.

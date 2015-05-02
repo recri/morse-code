@@ -813,6 +813,9 @@ function morse_code_straight_input(context) {
 	// handlers for two button mouse
 	onmousedown : function(event) { self.keyOn(); },
 	onmouseup : function(event) { self.keyOff(); },
+	// handlers for touch buttons
+	ontouchstart : function(event, button) { console.log(event, button); },
+	ontouchend : function(event, button) { console.log(event, button); },
 	// handlers for MIDI
 	onmidievent : function(event) {
 	    if (event.data.length == 3) {
@@ -852,6 +855,9 @@ function morse_code_iambic_input(context) {
 	// handlers for two button mouse
 	onmousedown : function(event) { self.keydown(event.button == 0); },
 	onmouseup : function(event) { self.keyup(event.button == 0); },
+	// handlers for touch buttons
+	ontouchstart : function(event, button) { console.log(event, button); },
+	ontouchend : function(event, button) { console.log(event, button); },
 	// handlers for MIDI
 	onmidievent : function(event) {
 	    if (event.data.length == 3) {

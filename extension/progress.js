@@ -56,7 +56,10 @@ function study_progress(word_list, station) {
 	words : {},		// the dictionary of words studied
 				// number of times seen, recording percent correct, 
 	current : "",		// current word
-	session : {},		// current session, like words but for this session
+	session : {
+	    words : ["e", "t", "i" ],
+	    tests : []
+	},		// current session, like words but for this session
 
 	input_text : "",
 	output_text : "",
@@ -66,9 +69,6 @@ function study_progress(word_list, station) {
 	test_output_time : 0,
 	test_input_time : 0,
 
-	focus : function() {
-	    document.getElementById("key_focus").focus();
-	},
 	clear_output : function() {
 	    self.output_text = "";
 	    self.output_code = "";
@@ -160,13 +160,13 @@ function study_progress(word_list, station) {
 	getSpeed : function() { return self.station.output.wpm },
 	faster : function() { self.setSpeed(self.getSpeed()+2.5); },
 	slower : function() { self.setSpeed(self.getSpeed()-2.5); },
-	onagain : function() { self.focus(); self.again(); },
-	onnext : function() { self.focus(); self.next(); },
-	onstart : function() { self.focus(); self.start(); },
-	onrestart : function() { self.focus(); self.restart(); },
-	onstop : function() { self.focus(); self.stop(); },
-	onslower : function() { self.focus(); self.slower(); },
-	onfaster : function() { self.focus(); self.faster(); },
+	onagain : function() { self.again(); },
+	onnext : function() { self.next(); },
+	onstart : function() { self.start(); },
+	onrestart : function() { self.restart(); },
+	onstop : function() { self.stop(); },
+	onslower : function() { self.slower(); },
+	onfaster : function() { self.faster(); },
 	
     };
 
