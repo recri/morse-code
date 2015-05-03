@@ -24,24 +24,21 @@
       <div id="key_buttons"></div>
       <div class="center">
 	<h2>Key Type</h2>
-	<form id="key_type" onchange="key_type_select()">
+	<form id="key_type" onchange="station_ui.key_type_select()">
 	  <input type="radio" name="key_type" value="straight" align="left">Straight Key<br/>
 	  <input type="radio" name="key_type" value="iambic" align="left" checked>Iambic Key<br/>
 	</form>
-	<form id="input_swap" onchange="input_swap_paddles()">
+	<form id="input_swap" onchange="station_ui.input_swap_paddles()">
 	  <input type="checkbox" name="input_swap" value="1">Swap Paddles</input>
 	</form>
 	<h2>MIDI Device</h2>
-	<form id="key_input" onchange="key_input_select()">
-	  <!-- <input type="radio" name="key_input" value="keyboard" align="left" checked>Keyboard<br/> -->
-	  <!-- <input type='radio' name='key_input' value='mouse' align="left">Mouse<br/> -->
-	  <!-- <input type="radio" name="key_input" value="touch" align="left">Touch<br/> -->
-	  <!-- append MIDI devices here
-	       <input type="radio" name="key_input" value="midi">MIDI<br/>
-	       -->
+	<form id="key_midi_input" onchange="station_ui.key_midi_input_select('key_midi_input')">
+	  <!--
+	      <input type="radio" name="key_midi_input" value="midi">MIDI<br/>
+	  -->
 	</form>
 	<form id="recheck_midi">
-	  <button type="button" onclick="key_input_regenerate_list()">Recheck MIDI</button>
+	  <button type="button" onclick="station_ui.key_midi_input_regenerate_list()">Recheck MIDI</button>
 	</form>
 
 	<h2>Input</h2>
@@ -57,106 +54,19 @@
     <script src="js/plugins.js"></script>
     <script src="js/main.js"></script>
     <script src="js/morse.js"></script>
+    <script src="js/ui.js"></script>
     <script>
       var station = morse_code_station();
+      var station_ui = morse_code_ui(station);
       station.input_decoder.on('letter', function(ltr, code) {
         var elt = document.getElementById("input_text");
         elt.textContent += ltr;
         elt.scrollTop = 1000;
       });
-      function find_item_checked(name) {
-        var radios = document.getElementsByName(name);
-        for (var i in radios)
-          if (radios[i].checked)
-	    return radios[i].value;
-        return null;
-      }
-      function set_item_checked(name, value) {
-        var radios = document.getElementsByName(name);
-        for (var i in radios)
-          radios[i].checked = (radios[i].value == value);
-      }
-      function key_type_select() {
-        var new_type = find_item_checked('key_type');
-        if (new_type != station.key_type) {
-          if (station.key_type && station.input[station.key_type])
-	    station.input[station.key_type].onblur();
-          station.key_type_select(new_type);
-          if (station.key_type && station.input[station.key_type])
-            station.input[station.key_type].onfocus();
-        }
-      }
-      function key_input_select() {
-	station.key_input_select(find_item_checked('key_input'));
-      }
-      function key_input_regenerate_list() {
-        // try to preserve the selected value if possible
-        var key_input = document.getElementById('key_input');
-        var checked = find_item_checked('key_input');
-	if (key_input) {
-          key_input.innerHTML = "";
-          var names = station.midi_key.names();
-          for (var i in names) {
-	    // console.log("adding "+names[i]+" to midi inputs");
-            key_input.innerHTML += "<input type='radio' name='key_input' value='"+names[i]+"' align='left'>"+names[i]+"<br/>";
-          }
-	  if (checked) set_item_checked('key_input', checked);
-	}
-      }
-      function input_swap_paddles() {
-        var value = find_item_checked('input_swap') == 1;
-        // console.log("input_swap_paddles "+value);
-        station.input.setSwapped(value);
-      }
-      function slider(id, min, max, value, units, target, ident) {
-        // console.log("slider("+id+")");
-        var inputid = id+"_input";
-        var valueid = id+"_value";
-        var identid = id+"_identity";
-	document.getElementById(id).innerHTML = '<span id="'+identid+'"></span><input id="'+inputid+'"></input><br/><span id="'+valueid+'"></span>';
-        var inp = document.getElementById(inputid);
-	var val = document.getElementById(valueid);
-        var tag = document.getElementById(identid);
-        inp.type = "range";
-	inp.min = min;
-	inp.max = max;
-        if (ident) tag.innerText = ident;
-        var target_value = inp.value;
-	if (units == "dB") {
-          inp.oninput = inp.onchange = function() {
-            val.innerHTML = ""+inp.value+" "+units;
-	    target(Math.pow(10, inp.value/20))
-          }
-        } else if (units == "ms") {
-          inp.oninput = inp.onchange = function() {
-            val.innerHTML = ""+inp.value+" "+units;
-	    target(inp.value/1000)
-          }
-        } else {
-          inp.oninput = inp.onchange = function() {
-            val.innerHTML = ""+inp.value+" "+units;
-	    target(inp.value)
-          }
-        }
-	inp.value = value;
-        inp.onchange();
-      };
-
       function onLoadHandler() {
-	slider("input_pitch", "220", "1760", "550", "Hz", station.input.setPitch, "  Pitch  ");
-	slider("input_gain", "-60", "0", "-24", "dB", station.input.setGain, "  Gain  ");
-	slider("input_speed", "5", "30", "15", "WPM", station.input.setWPM, "  Speed  ");
-        slider("input_rise_time", "1", "10", "4", "ms", station.input.setOnTime, "  Rise  ");
-        slider("input_fall_time", "1", "10", "4", "ms", station.input.setOffTime, "  Fall  ");
-        key_input_regenerate_list();
-        key_type_select();
-
-        // keydown/keyup events on html element
-        morse_code_keyboard_input(station);
-
-        // touch/mouse events on key buttons
-        morse_code_touch_input('key_buttons', station);
-
+        station_ui.input_controls();
+        station_ui.input_keyboard();
+        station_ui.input_touch('key_buttons');
       };
     </script>
   </body>

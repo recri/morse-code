@@ -36,7 +36,7 @@
 	<div id="output_rise_time"></div>
 	<div id="output_fall_time"></div>
       </div>
-      <div class="text">
+      <div class="text center">
 	<p>
 	  The <b>pitch</b> refers to the frequency of the tone
 	  measuered in Hertz.
@@ -66,46 +66,15 @@
     <script src="js/plugins.js"></script>
     <script src="js/main.js"></script>
     <script src="js/morse.js"></script>
+    <script src="js/ui.js"></script>
     <script>
       var station = morse_code_station();
+      var station_ui = morse_code_ui(station);
       station.output_decoder.on('letter', function(ltr, code) {
         var elt = document.getElementById("output_text");
         elt.textContent += ltr;
         elt.scrollTop = 1000;
       });
-      function slider(id, min, max, value, units, target, ident) {
-        // console.log("slider("+id+")");
-        var inputid = id+"_input";
-        var valueid = id+"_value";
-        var identid = id+"_identity";
-	document.getElementById(id).innerHTML = '<span id="'+identid+'"></span><input id="'+inputid+'"></input><br/><span id="'+valueid+'"></span>';
-        var inp = document.getElementById(inputid);
-	var val = document.getElementById(valueid);
-        var tag = document.getElementById(identid);
-        inp.type = "range";
-	inp.min = min;
-	inp.max = max;
-        if (ident) tag.innerText = ident;
-        var target_value = inp.value;
-	if (units == "dB") {
-          inp.oninput = inp.onchange = function() {
-            val.innerHTML = ""+inp.value+" "+units;
-	    target(Math.pow(10, inp.value/20))
-          }
-        } else if (units == "ms") {
-          inp.oninput = inp.onchange = function() {
-            val.innerHTML = ""+inp.value+" "+units;
-	    target(inp.value/1000)
-          }
-        } else {
-          inp.oninput = inp.onchange = function() {
-            val.innerHTML = ""+inp.value+" "+units;
-	    target(inp.value)
-          }
-        }
-	inp.value = value;
-        inp.onchange();
-      };
       function morse_code_send_text(id) {
         var elt = document.getElementById(id);
         var text = elt.value;
@@ -113,11 +82,7 @@
         station.output.send(text);
       }
       function onLoadHandler() {
-	slider("output_pitch", "220", "1760", "600", "Hz", station.output.setPitch, "  Pitch  ");
-	slider("output_gain", "-60", "0", "-24", "dB", station.output.setGain, "  Gain  ");
-	slider("output_speed", "5", "30", "15", "WPM", station.output.setWPM, "  Speed  ");
-        slider("output_rise_time", "1", "10", "4", "ms", station.output.setOnTime, "  Rise  ")
-        slider("output_fall_time", "1", "10", "4", "ms", station.output.setOffTime, "  Fall  ")
+        station_ui.output_controls();
       };
     </script>
   </body>
