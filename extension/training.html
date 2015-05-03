@@ -1,40 +1,23 @@
 <!DOCTYPE html>
-<html>
+<html class="no-js" lang="">
   <head>
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
 	<title>Morse Code Training</title>
-        <meta name="description" content="morse code training application">
+        <meta name="description" content="morse code training">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="css/normalize.css">
         <link rel="stylesheet" href="css/main.css">
         <script src="js/vendor/modernizr-2.8.3.min.js"></script>
   </head>
   <body onload="onLoadHandler()">
-    <style>
-      .page {
-	margin-left: auto;
-	margin-right: auto;
-        text-align: center;
-      }
-      button {
-        margin: 10px;
-      }
-      .button {
-        height: 80px;
-        -moz-border-radius: 10px;
-        -webkit-border-radius: 10px;
-        border-radius: 10px;
-      }
-      .button.double {
-        width: 160px;
-      }
-      .button.single {
-        width: 80px;
-      }
-    </style>
+    <!--[if lt IE 8]>
+        <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+    <![endif]-->
     <div class="page" id="page">
       <h1>Morse Code Training</h1>
+      <div id="training_progress">
+      </div>
       <div id="training_controls">
  	<button onclick="progress.onnext()">Next</button>
 	<button onclick="progress.onagain()">Again</button>
@@ -56,14 +39,18 @@
 	pressing the other will send a string of dahs,
 	and pressing both will send a string of di-dahs or dah-dits.
       </p>
-  </body>
-    <script type="text/javascript" src="js/morse.js"></script>
-    <script type="text/javascript" src="js/words.js"></script>
-    <script type="text/javascript" src="js/progress.js"></script>
-    <script type="text/javascript">
-      var station, progress;
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.3.min.js"><\/script>')</script>
+    <script src="js/plugins.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/morse.js"></script>
+    <script src="js/words.js"></script>
+    <script src="js/progress.js"></script>
+    <script>
+	var station, progress;
 
-      function onLoadHandler() {
+	function onLoadHandler() {
 
         station = morse_code_station();
 
@@ -92,8 +79,9 @@
 
         // touch/mouse events on key buttons
         morse_code_touch_input('key_buttons', station);
-      }
+	}
     </script>
+  </body>
 </html>
 
 

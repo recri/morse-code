@@ -1,11 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html class="no-js" lang="">
   <head>
-    <title>Morse Code Output</title>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+	<title>Morse Code Output</title>
+        <meta name="description" content="morse code ouput">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="css/normalize.css">
+        <link rel="stylesheet" href="css/main.css">
+        <script src="js/vendor/modernizr-2.8.3.min.js"></script>
   </head>
   <body onload="onLoadHandler()">
-    <script type="text/javascript" src="morse.js"></script>
-    <script type="text/javascript">
+    <!--[if lt IE 8]>
+        <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+    <![endif]-->
+    <div class="page">
+      <h1>Morse Code Output</h1>
+      <div class="center">
+	<h2>Text to Output</h2>
+	<form>
+	  <input id="text" type="text" size="32" onkeydown="if (event.keyCode == 13) { morse_code_send_text('text'); return false; }"></input>
+	  <input type="button" value="Send" onclick="morse_code_send_text('text')"></input>
+	</form>
+      </div>
+      <div class="center">
+	<h2>Output Text Decoded</h2>
+	<div id="output_text" class="center"></div>
+	<button onclick="document.getElementById('output_text').innerHTML = ''">Clear Output</button>
+      </div>
+      <div class="center">
+	<h2>Parameters</h2>
+	<div id="output_pitch"></div>
+	<div id="output_gain"></div>
+	<div id="output_speed"></div>
+	<div id="output_rise_time"></div>
+	<div id="output_fall_time"></div>
+      </div>
+      <div class="text">
+	<p>
+	  The <b>pitch</b> refers to the frequency of the tone
+	  measuered in Hertz.
+	</p><p>
+	  The <b>gain</b> is the volume level of the tone produced
+	  measured in decibels below the maximum.
+	</p><p>
+	  The <b>speed</b> is given in units of words per minute (WPM).  A
+	  average word is taken as 50 (or 60) dits in length in the
+	  easier (or more difficult) formulation.  Thus 15 WPM comes
+	  to 750 dits per minute, 12.5 dits per second, or about 80
+	  milliseconds per dit.
+	</p><p>
+	  The <b>rise</b> and <b>fall</b> define the steepness of the
+	  keying envelope in milliseconds.  
+	</p><p>
+	  The plan for this page was that the <b>Output Text
+	  Decoded</b> would display text as it was sounded.  But I
+	  will need to insert some sort of governor to prevent the
+	  audio generation from running so far ahead of what is being
+	  played.
+	</p>
+      </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.3.min.js"><\/script>')</script>
+    <script src="js/plugins.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/morse.js"></script>
+    <script>
       var station = morse_code_station();
       station.output_decoder.on('letter', function(ltr, code) {
         var elt = document.getElementById("output_text");
@@ -59,79 +120,5 @@
         slider("output_fall_time", "1", "10", "4", "ms", station.output.setOffTime, "  Fall  ")
       };
     </script>
-    <style>
-      .page {
-	margin-left: auto;
-	margin-right: auto;
-        text-align: center;
-	width: 480px;
-      }
-      .center {
-	margin-left: auto;
-	margin-right: auto;
-	width: 100%;
-        text-align: center;
-      }
-      #output_text {
-	height:240px;
-	width:75%;
-	border:1px solid #ccc;
-	font:16px/26px Georgia, Garamond, Serif;
-	overflow:auto;
-      }
-      .text {
-	margin-left: auto;
-	margin-right: auto;
-	width: 100%;
-        text-align: left;
-      }
-    </style>
-    <div class="page">
-      <h1>Morse Code Output</h1>
-      <div class="center">
-	<h2>Text to Output</h2>
-	<form>
-	  <input id="text" type="text" size="32" onkeydown="if (event.keyCode == 13) { morse_code_send_text('text'); return false; }"></input>
-	  <input type="button" value="Send" onclick="morse_code_send_text('text')"></input>
-	</form>
-      </div>
-      <div class="center">
-	<h2>Output Text Decoded</h2>
-	<div id="output_text" class="center"></div>
-	<button onclick="document.getElementById('output_text').innerHTML = ''">Clear Output</button>
-      </div>
-      <div class="center">
-	<h2>Parameters</h2>
-	<div id="output_pitch"></div>
-	<div id="output_gain"></div>
-	<div id="output_speed"></div>
-	<div id="output_rise_time"></div>
-	<div id="output_fall_time"></div>
-      </div>
-      <div class="text">
-	<p>
-	  The <b>pitch</b> refers to the frequency of the tone
-	  measuered in Hertz.
-	</p><p>
-	  The <b>gain</b> is the volume level of the tone produced
-	  measured in decibels below the maximum.
-	</p><p>
-	  The <b>speed</b> is given in units of words per minute (WPM).  A
-	  average word is taken as 50 (or 60) dits in length in the
-	  easier (or more difficult) formulation.  Thus 15 WPM comes
-	  to 750 dits per minute, 12.5 dits per second, or about 80
-	  milliseconds per dit.
-	</p><p>
-	  The <b>rise</b> and <b>fall</b> define the steepness of the
-	  keying envelope in milliseconds.  
-	</p><p>
-	  The plan for this page was that the <b>Output Text
-	  Decoded</b> would display text as it was sounded.  But I
-	  will need to insert some sort of governor to prevent the
-	  audio generation from running so far ahead of what is being
-	  played.
-	</p>
-      </div>
-    </div>
   </body>
 </html>

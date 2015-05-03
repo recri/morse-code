@@ -95,6 +95,43 @@ textarea {
    Author's custom styles
    ========================================================================== */
 
+.page {
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+}
+#output_text, #input_text {
+      height:240px;
+      width:75%;
+      border:1px solid #ccc;
+      font:16px/26px Georgia, Garamond, Serif;
+      overflow:auto;
+}
+#key_focus {
+        border:5px;
+}
+.text {
+	margin-left: auto;
+	margin-right: auto;
+	width: 100%;
+        text-align: left;
+}
+button {
+      margin: 10px;
+}
+.button {
+      height: 80px;
+      -moz-border-radius: 10px;
+      -webkit-border-radius: 10px;
+      border-radius: 10px;
+}
+.button.double {
+      width: 160px;
+}
+.button.single {
+      width: 80px;
+}
+
 
 
 

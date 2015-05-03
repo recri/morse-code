@@ -1,11 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html class="no-js" lang="">
   <head>
-    <title>Morse Code Input</title>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+	<title>Morse Code Input</title>
+        <meta name="description" content="morse code input">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="css/normalize.css">
+        <link rel="stylesheet" href="css/main.css">
+        <script src="js/vendor/modernizr-2.8.3.min.js"></script>
   </head>
   <body onload="onLoadHandler()">
-    <script type="text/javascript" src="morse.js"></script>
-    <script type="text/javascript">
+    <!--[if lt IE 8]>
+        <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+    <![endif]-->
+    <div class="page">
+      <h1>Morse Code Input</h1>
+      <div class="center">
+	<h2>Key Focus</h2>
+	<!-- alternate straight2.jpg -->
+	<input id="key_focus" type="image" src="paddle1.jpg" width="160px" height="120px" alt="iambic paddle"
+	       onfocus="station.input.onfocus()" onblur="station.input.onblur()"
+	       onkeydown="station.input.onkeydown(event)" onkeyup="station.input.onkeyup(event)"
+	       onmousedown="station.input.onmousedown(event)" onmouseup="station.input.onmouseup(event)"
+	       oncontextmenu="return false"
+	       </input>
+      </div>
+      <div class="center">
+	<h2>Input Text</h2>
+	<div id="input_text" class="center"></div>
+	<button onclick="document.getElementById('input_text').innerHTML = ''">Clear Input</button>
+      </div>
+      <div class="center">
+	<h2>Key Type</h2>
+	<form id="key_type" onchange="key_type_select()">
+	  <input type="radio" name="key_type" value="straight" align="left">Straight Key<br/>
+	  <input type="radio" name="key_type" value="iambic" align="left" checked>Iambic Key<br/>
+	</form>
+	<h2>MIDI Device</h2>
+	<form id="key_input" onchange="key_input_select()">
+	  <!-- <input type="radio" name="key_input" value="keyboard" align="left" checked>Keyboard<br/> -->
+	  <!-- <input type='radio' name='key_input' value='mouse' align="left">Mouse<br/> -->
+	  <!-- <input type="radio" name="key_input" value="touch" align="left">Touch<br/> -->
+	  <!-- append MIDI devices here
+	       <input type="radio" name="key_input" value="midi">MIDI<br/>
+	       -->
+	</form>
+	<form id="recheck_midi">
+	  <button type="button" onclick="key_input_regenerate_list()">Recheck MIDI</button>
+	</form>
+	  
+	<h2>Input</h2>
+	<div id="input_pitch"></div>
+	<div id="input_gain"></div>
+	<div id="input_speed"></div>
+	<div id="input_rise_time"></div>
+	<div id="input_fall_time"></div>
+	<form id="input_swap" onchange="input_swap_paddles()">
+	  <input type="checkbox" name="input_swap" value="1">Swap Paddles</input>
+	</form>
+      </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.3.min.js"><\/script>')</script>
+    <script src="js/plugins.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/morse.js"></script>
+    <script>
       var station = morse_code_station();
       station.input_decoder.on('letter', function(ltr, code) {
         var elt = document.getElementById("input_text");
@@ -109,92 +170,6 @@
         key_type_select();
       };
     </script>
-    <style>
-      .page {
-	margin-left: auto;
-	margin-right: auto;
-        text-align: center;
-	width: 480px;
-      }
-      .center {
-	margin-left: auto;
-	margin-right: auto;
-	width: 100%;
-        text-align: center;
-      }
-      .column-2-right {
-	float: right;
-	width: 50%;
-        text-align: center;
-      }
-      .column-2-left {
-	float: left;
-	width: 50%;
-        text-align: center;
-      }
-      #input_text, #output_text {
-	height:240px;
-	width:75%;
-	border:1px solid #ccc;
-	font:16px/26px Georgia, Garamond, Serif;
-	overflow:auto;
-      }
-      #key_type, #key_input {
-      }
-      #key_focus {
-        border:5px;
-      }
-      .column-3-left { float: left; width: 33%; }
-      .column-3-right { float: right; width: 33%; }
-      .column-3-center { display: inline-block; width: 33%; }
-    </style>
-    <div class="page">
-      <h1>Morse Code Input</h1>
-      <div class="center">
-	<h2>Key Focus</h2>
-	<!-- alternate straight2.jpg -->
-	<input id="key_focus" type="image" src="paddle1.jpg" width="160px" height="120px" alt="iambic paddle"
-	       onfocus="station.input.onfocus()" onblur="station.input.onblur()"
-	       onkeydown="station.input.onkeydown(event)" onkeyup="station.input.onkeyup(event)"
-	       onmousedown="station.input.onmousedown(event)" onmouseup="station.input.onmouseup(event)"
-	       oncontextmenu="return false"
-	       </input>
-      </div>
-      <div class="center">
-	<h2>Input Text</h2>
-	<div id="input_text" class="center"></div>
-	<button onclick="document.getElementById('input_text').innerHTML = ''">Clear Input</button>
-      </div>
-      <div class="center">
-	<h2>Key Type</h2>
-	<form id="key_type" onchange="key_type_select()">
-	  <input type="radio" name="key_type" value="straight" align="left">Straight Key<br/>
-	  <input type="radio" name="key_type" value="iambic" align="left" checked>Iambic Key<br/>
-	</form>
-	<h2>MIDI Device</h2>
-	<form id="key_input" onchange="key_input_select()">
-	  <!-- <input type="radio" name="key_input" value="keyboard" align="left" checked>Keyboard<br/> -->
-	  <!-- <input type='radio' name='key_input' value='mouse' align="left">Mouse<br/> -->
-	  <!-- <input type="radio" name="key_input" value="touch" align="left">Touch<br/> -->
-	  <!-- append MIDI devices here
-	       <input type="radio" name="key_input" value="midi">MIDI<br/>
-	       -->
-	</form>
-	<form id="recheck_midi">
-	  <button type="button" onclick="key_input_regenerate_list()">Recheck MIDI</button>
-	</form>
-	  
-	<h2>Input</h2>
-	<div id="input_pitch"></div>
-	<div id="input_gain"></div>
-	<div id="input_speed"></div>
-	<div id="input_rise_time"></div>
-	<div id="input_fall_time"></div>
-	<form id="input_swap" onchange="input_swap_paddles()">
-	  <input type="checkbox" name="input_swap" value="1">Swap Paddles</input>
-	</form>
-      </div>
-    </div>
   </body>
 </html>
 

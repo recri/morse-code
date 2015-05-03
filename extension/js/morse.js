@@ -998,13 +998,13 @@ function morse_code_touch_input(button_div_id, station) {
     }
     var d = document.getElementById(button_div_id);
     console.log(d); console.log(d.innerHTML);
-    d.innerHTML = '<button class="button double" id="key-button"/>'+
+    d.innerHTML = //'<button class="button double" id="key-button"/>'+
 		  '<div>'+
 		    '<button class="button single" id="left-button"/>'+
 		    '<button class="button single" id="right-button"/>'+
 		  '</div>';
     console.log(d); console.log(d.innerHTML);
-    button_up("key-button");
+    // button_up("key-button");
     button_up("left-button");
     button_up("right-button");
 }
@@ -1078,8 +1078,6 @@ function morse_code_station() {
 	input_detimer : morse_code_detime(context),
 	input_decoder : morse_code_decode(context),
 	midi_key : morse_code_midi_input(),
-	keyboard_key : morse_code_keyboard_input(),
-	touch_key : morse_code_touch_input(),
     };
     
     var TEST_DETONER = false;
