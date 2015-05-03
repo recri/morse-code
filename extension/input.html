@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html class="no-js" lang="">
   <head>
-        <meta charset="utf-8">
-        <meta http-equiv="x-ua-compatible" content="ie=edge">
-	<title>Morse Code Input</title>
-        <meta name="description" content="morse code input">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="css/normalize.css">
-        <link rel="stylesheet" href="css/main.css">
-        <script src="js/vendor/modernizr-2.8.3.min.js"></script>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Morse Code Input</title>
+    <meta name="description" content="morse code input">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/main.css">
+    <script src="js/vendor/modernizr-2.8.3.min.js"></script>
   </head>
   <body onload="onLoadHandler()">
     <!--[if lt IE 8]>
@@ -17,25 +17,19 @@
     <div class="page">
       <h1>Morse Code Input</h1>
       <div class="center">
-	<h2>Key Focus</h2>
-	<!-- alternate straight2.jpg -->
-	<input id="key_focus" type="image" src="paddle1.jpg" width="160px" height="120px" alt="iambic paddle"
-	       onfocus="station.input.onfocus()" onblur="station.input.onblur()"
-	       onkeydown="station.input.onkeydown(event)" onkeyup="station.input.onkeyup(event)"
-	       onmousedown="station.input.onmousedown(event)" onmouseup="station.input.onmouseup(event)"
-	       oncontextmenu="return false"
-	       </input>
-      </div>
-      <div class="center">
 	<h2>Input Text</h2>
 	<div id="input_text" class="center"></div>
 	<button onclick="document.getElementById('input_text').innerHTML = ''">Clear Input</button>
       </div>
+      <div id="key_buttons"></div>
       <div class="center">
 	<h2>Key Type</h2>
 	<form id="key_type" onchange="key_type_select()">
 	  <input type="radio" name="key_type" value="straight" align="left">Straight Key<br/>
 	  <input type="radio" name="key_type" value="iambic" align="left" checked>Iambic Key<br/>
+	</form>
+	<form id="input_swap" onchange="input_swap_paddles()">
+	  <input type="checkbox" name="input_swap" value="1">Swap Paddles</input>
 	</form>
 	<h2>MIDI Device</h2>
 	<form id="key_input" onchange="key_input_select()">
@@ -49,16 +43,13 @@
 	<form id="recheck_midi">
 	  <button type="button" onclick="key_input_regenerate_list()">Recheck MIDI</button>
 	</form>
-	  
+
 	<h2>Input</h2>
 	<div id="input_pitch"></div>
 	<div id="input_gain"></div>
 	<div id="input_speed"></div>
 	<div id="input_rise_time"></div>
 	<div id="input_fall_time"></div>
-	<form id="input_swap" onchange="input_swap_paddles()">
-	  <input type="checkbox" name="input_swap" value="1">Swap Paddles</input>
-	</form>
       </div>
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
@@ -86,20 +77,13 @@
           radios[i].checked = (radios[i].value == value);
       }
       function key_type_select() {
-        var name = 'key_type';
-        var key_type = find_item_checked(name);
-        if (key_type != station.key_type) {
-          // adapt front end: image and handlers
-          var i = document.getElementById('key_focus')
-          if (key_type == 'straight') {
-            i.src = "straight2.jpg";
-            i.alt = "straight telegraph key";
-          } else {
-            i.src = "paddle1.jpg";
-            i.alt = "iambic paddle key";
-          }
-          // let the back end adapt
-          station.key_type_select(key_type);
+        var new_type = find_item_checked('key_type');
+        if (new_type != station.key_type) {
+          if (station.key_type && station.input[station.key_type])
+	    station.input[station.key_type].onblur();
+          station.key_type_select(new_type);
+          if (station.key_type && station.input[station.key_type])
+            station.input[station.key_type].onfocus();
         }
       }
       function key_input_select() {
@@ -111,9 +95,6 @@
         var checked = find_item_checked('key_input');
 	if (key_input) {
           key_input.innerHTML = "";
-	  // key_input.innerHTML += "<input type='radio' name='key_input' value='keyboard' align='left'>Keyboard<br/>";
-          // key_input.innerHTML += "<input type='radio' name='key_input' value='mouse align='left'>Mouse<br/>"
-          // key_input.innerHTML += "<input type='radio' name='key_input' value='touch' align='left'>Touch<br/>"
           var names = station.midi_key.names();
           for (var i in names) {
 	    // console.log("adding "+names[i]+" to midi inputs");
@@ -160,6 +141,7 @@
 	inp.value = value;
         inp.onchange();
       };
+
       function onLoadHandler() {
 	slider("input_pitch", "220", "1760", "550", "Hz", station.input.setPitch, "  Pitch  ");
 	slider("input_gain", "-60", "0", "-24", "dB", station.input.setGain, "  Gain  ");
@@ -168,9 +150,14 @@
         slider("input_fall_time", "1", "10", "4", "ms", station.input.setOffTime, "  Fall  ");
         key_input_regenerate_list();
         key_type_select();
+
+        // keydown/keyup events on html element
+        morse_code_keyboard_input(station);
+
+        // touch/mouse events on key buttons
+        morse_code_touch_input('key_buttons', station);
+
       };
     </script>
   </body>
 </html>
-
-

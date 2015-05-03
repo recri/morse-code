@@ -40,7 +40,7 @@ if (false) {
 		i = list.length = func ? list.length : 0
 		while(i-->0) func == list[i].f && list.splice(i,1)
 	    },
-	    /** 
+	    /**
 	     * Emit: send event, callbacks will be triggered
 	     */
 	    emit : function(){
@@ -195,7 +195,7 @@ function morse_code_table() {
 		'L' : '.-..', 'M' : '--', 'N' : '-.', 'O' : '---', 'P' : '.--.', 'Q' : '--.-', 'R' : '.-.', 'S' : '...', 'T' : '-', 'U' : '..-', 'V' : '...-',
 		'W' : '.--', 'X' : '-..-', 'Y' : '-.--', 'Z' : '--..', '_' : '..--.-', },
 	    // three prosigns assigned to ascii punctuation '!' : '...-.', '%' : '.-...', '*' : '...-.-'
-	    // common latin extensions, some shared codes 'À' : '.--.-', 'Á' : '.--.-', 'Â' : '.--.-', 'Ä' : '.-.-', 'Ç' : '----', 'È' : '..-..', 'É' : '..-..', 'Ñ' : '--.--', 'Ö' : '---.', 'Ü' : '..--', 
+	    // common latin extensions, some shared codes 'À' : '.--.-', 'Á' : '.--.-', 'Â' : '.--.-', 'Ä' : '.-.-', 'Ç' : '----', 'È' : '..-..', 'É' : '..-..', 'Ñ' : '--.--', 'Ö' : '---.', 'Ü' : '..--',
 	    // other latin extensions exist
 	    'wabun' : {
 		"\u30a2" : '--.--', "\u30ab" : '.-..', "\u30b5" : '-.-.-', "\u30bf" : '-.', "\u30ca" : '.-.', "\u30cf" : '-...',
@@ -374,7 +374,7 @@ function morse_code_output(context) {
 //
 // translate keyed audio tone to keyup/keydown events
 // this doesn't seem to work correctly at present.
-// 
+//
 function morse_code_detone(context) {
     /*
     ** The Goertzel filter detects the power of a specified frequency
@@ -506,7 +506,7 @@ function morse_code_detime(context) {
 	** Until detime has seen both dits and dahs, it may be a little confused.
 	*/
 	detime_process : function(onoff, time) {
-	    time *= context.sampleRate;			/* convert seconds to frames */ 
+	    time *= context.sampleRate;			/* convert seconds to frames */
 	    var observation = time - self.time;	/* float length of observed element or space */
 	    self.time = time;
 	    if (onoff == 0) {				/* the end of a dit or a dah */
@@ -543,7 +543,7 @@ function morse_code_detime(context) {
 		var d_ils = o_ils - self.estimate;
 		var guess = 100 * observation / self.estimate;
 		if (d_ies == 0 || d_ils == 0) {
-		    /* if one of the observations is spot on, then 1/(d*d) will be infinite and the estimate is unchanged */	    
+		    /* if one of the observations is spot on, then 1/(d*d) will be infinite and the estimate is unchanged */
 		} else if (guess > 500) {
 		    /* if it looks like a word space, it could be any length, don't worry about how long it is */
 		} else {
@@ -652,38 +652,38 @@ function morse_code_iambic_keyer(player) {
     ** 2012, and the length of the dah and inter-element-space has been
     ** made into configurable multiples of the dit clock.
     **
-    ** And then, 
+    ** And then,
     */
     /*
-     * newkeyer.c  an electronic keyer with programmable outputs 
-     * Copyright (C) 2012 Roger L. Traylor   
-     * 
+     * newkeyer.c  an electronic keyer with programmable outputs
+     * Copyright (C) 2012 Roger L. Traylor
+     *
      * This program is free software: you can redistribute it and/or modify
      * it under the terms of the GNU General Public License as published by
      * the Free Software Foundation, either version 3 of the License, or
      * (at your option) any later version.
-     * 
+     *
      * This program is distributed in the hope that it will be useful,
      * but WITHOUT ANY WARRANTY; without even the implied warranty of
      * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
      * GNU General Public License for more details.
-     * 
+     *
      * You should have received a copy of the GNU General Public License
      * along with this program.  If not, see <http://www.gnu.org/licenses/>.
      */
-    
-    // newkeyer.c    
+
+    // newkeyer.c
     // R. Traylor
     // 3.19.2012
-    // iambic keyer      
+    // iambic keyer
 
     // keyer states
-    var IDLE =     0;  // waiting for a paddle closure 
+    var IDLE =     0;  // waiting for a paddle closure
     var DIT =      1;  // making a dit or the space after
     var DAH =      2;  // making a dah or the space after
 
     // state variables
-    var keyer_state = IDLE;	// the keyer state 
+    var keyer_state = IDLE;	// the keyer state
     var dit_pending = false;	// memory for dit seen while playing a dah
     var dah_pending = false;	// memory for dah seen while playing a dit
     var timer = 0;		// seconds counting down to next decision
@@ -737,7 +737,7 @@ function morse_code_iambic_keyer(player) {
 	    // update timer
 	    timer -= ticks;
 
-	    // keyer state machine   
+	    // keyer state machine
 	    if (keyer_state == IDLE) {
 		if (dit_on) make_dit();
 		else if (dah_on) make_dah();
@@ -752,12 +752,12 @@ function morse_code_iambic_keyer(player) {
 		    else keyer_state = IDLE;
 		}
 	    }
-	    
+
 	    //*****************  dit pending state machine   *********************
 	    dit_pending = dit_pending ?
 		keyer_state != DIT :
 		(dit_on && keyer_state == DAH && timer < _perDah/3+_perIes);
-            
+
 	    //******************  dah pending state machine   *********************
 	    dah_pending = dah_pending ?
 		keyer_state != DAH :
@@ -980,9 +980,6 @@ function morse_code_keyboard_input() {
     h.addEventListener('keyup', function(event) { station.input.onkeyup(event); });
 }
 
-function morse_code_touch_input_html(button_div_id) {
-}
-
 function morse_code_touch_input(button_div_id, station) {
     function button_up(id) {
         var e = document.getElementById(id)
@@ -993,18 +990,12 @@ function morse_code_touch_input(button_div_id, station) {
         } else {
             e.addEventListener('mousedown', function(event) { station.input.onmousedown(event); });
             e.addEventListener('mouseup', function(event) { station.input.onmouseup(event); });
-            e.addEventListener('contextmenu', function() { return false; });
+            e.oncontextmenu = function() { return false; };
         }
     }
     var d = document.getElementById(button_div_id);
-    console.log(d); console.log(d.innerHTML);
-    d.innerHTML = //'<button class="button double" id="key-button"/>'+
-		  '<div>'+
-		    '<button class="button single" id="left-button"/>'+
-		    '<button class="button single" id="right-button"/>'+
-		  '</div>';
-    console.log(d); console.log(d.innerHTML);
-    // button_up("key-button");
+    d.innerHTML = '<button class="button single" id="left-button"/>'+
+                  '<button class="button single" id="right-button"/>';
     button_up("left-button");
     button_up("right-button");
 }
@@ -1079,7 +1070,7 @@ function morse_code_station() {
 	input_decoder : morse_code_decode(context),
 	midi_key : morse_code_midi_input(),
     };
-    
+
     var TEST_DETONER = false;
 
     self.output.connect(context.destination);
