@@ -19,14 +19,16 @@
 
 function morse_code_ui(station) {
     function button_up(id) {
-        var e = document.getElementById(id)
+        var e = document.getElementById(id);
+        var is_left = id.charAt(0) == 'l' ? 1 : 0;
+        // console.log('button_up('+id+') is_left '+is_left);
         if ('ontouchstart' in window) {
 	        /* browser with Touch Events running on touch-capable device */
-            e.addEventListener('touchstart', function(event) { station.input.ontouchstart(event); });
-            e.addEventListener('touchend', function(event) { station.input.ontouchend(event); });
+            e.addEventListener('touchstart', function(event) { station.input.keydown(is_left); });
+            e.addEventListener('touchend', function(event) { station.input.keyup(is_left); });
         } else {
-            e.addEventListener('mousedown', function(event) { station.input.onmousedown(event); });
-            e.addEventListener('mouseup', function(event) { station.input.onmouseup(event); });
+            e.addEventListener('mousedown', function(event) { station.input.keydown((event.button==0 ? 0 : 1) ^ is_left); });
+            e.addEventListener('mouseup', function(event) { station.input.keyup((event.button==0 ? 0 : 1) ^ is_left); });
             e.oncontextmenu = function() { return false; };
         }
     }
@@ -75,6 +77,10 @@ function morse_code_ui(station) {
         for (var i in radios)
             radios[i].checked = (radios[i].value == value);
     }
+    var MIN_PITCH = "220", MAX_PITCH = "1760", DEF_IN_PITCH = "600", DEF_OUT_PITCH = "550";
+    var MIN_GAIN = "-60", MAX_GAIN = "0", DEF_GAIN = "-24";
+    var MIN_SPEED = "5", MAX_SPEED = "50", DEF_SPEED = "15";
+    var MIN_TIME = "1", MAX_TIME = "10", DEF_TIME = "4";
     var self = {
         key_type_select : function() {
             var new_type = find_item_checked('key_type');
@@ -103,25 +109,25 @@ function morse_code_ui(station) {
 	            if (checked) set_item_checked('key_input', checked);
 	        }
         },
-        input_swap_paddles : function(id) {
-            var value = find_item_checked(id) == 1;
-            // console.log("input_swap_paddles "+value);
+        input_swap_paddles : function(name) {
+            var value = document.getElementsByName(name)[0].checked;
+            console.log("input_swap_paddles "+value);
             station.input.setSwapped(value);
         },
         input_controls : function() {
-	        slider("input_pitch", "220", "1760", "550", "Hz", station.input.setPitch, "  Pitch  ");
-	        slider("input_gain", "-60", "0", "-24", "dB", station.input.setGain, "  Gain  ");
-	        slider("input_speed", "5", "30", "15", "WPM", station.input.setWPM, "  Speed  ");
-            slider("input_rise_time", "1", "10", "4", "ms", station.input.setOnTime, "  Rise  ");
-            slider("input_fall_time", "1", "10", "4", "ms", station.input.setOffTime, "  Fall  ");
+	        slider("input_pitch", MIN_PITCH, MAX_PITCH, DEF_IN_PITCH, "Hz", station.input.setPitch, "  Pitch  ");
+	        slider("input_gain", MIN_GAIN, MAX_GAIN, DEF_GAIN, "dB", station.input.setGain, "  Gain  ");
+	        slider("input_speed", MIN_SPEED, MAX_SPEED, DEF_SPEED, "WPM", station.input.setWPM, "  Speed  ");
+            slider("input_rise_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", station.input.setOnTime, "  Rise  ");
+            slider("input_fall_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", station.input.setOffTime, "  Fall  ");
             self.key_midi_input_regenerate_list('key_midi_input');
             self.key_type_select('key_type');
         },
         input_keyboard : function() {
             // keydown/keyup events on html element
             var h = document.getElementsByTagName('html')[0];
-            h.addEventListener('keydown', function(event) { station.input.onkeydown(event); });
-            h.addEventListener('keyup', function(event) { station.input.onkeyup(event); });
+            h.addEventListener('keydown', function(event) { station.input.keydown((event.keyCode&1)==0); });
+            h.addEventListener('keyup', function(event) { station.input.keyup((event.keyCode&1)==0); });
         },
         input_touch : function(id) {
             // touch/mouse events on key buttons
@@ -132,11 +138,11 @@ function morse_code_ui(station) {
             button_up("right-button");
         },
         output_controls : function() {
-	        slider("output_pitch", "220", "1760", "600", "Hz", station.output.setPitch, "  Pitch  ");
-	        slider("output_gain", "-60", "0", "-24", "dB", station.output.setGain, "  Gain  ");
-	        slider("output_speed", "5", "30", "15", "WPM", station.output.setWPM, "  Speed  ");
-            slider("output_rise_time", "1", "10", "4", "ms", station.output.setOnTime, "  Rise  ")
-            slider("output_fall_time", "1", "10", "4", "ms", station.output.setOffTime, "  Fall  ")
+	        slider("output_pitch", MIN_PITCH, MAX_PITCH, DEF_OUT_PITCH, "Hz", station.output.setPitch, "  Pitch  ");
+	        slider("output_gain", MIN_GAIN, MAX_GAIN, DEF_GAIN, "dB", station.output.setGain, "  Gain  ");
+	        slider("output_speed", MIN_SPEED, MAX_SPEED, DEF_SPEED, "WPM", station.output.setWPM, "  Speed  ");
+            slider("output_rise_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", station.output.setOnTime, "  Rise  ")
+            slider("output_fall_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", station.output.setOffTime, "  Fall  ")
         },
     };
     return self;

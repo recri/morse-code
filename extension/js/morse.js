@@ -783,124 +783,110 @@ function morse_code_iambic_keyer(player) {
 
 function morse_code_straight_input(context) {
     var self = {
-	player : morse_code_player(context),
-	setPitch : function(hertz) { self.player.setPitch(hertz); },
-	setGain : function(gain) { self.player.setGain(gain); },
-	setOnTime : function(seconds) { self.player.setOnTime(seconds); },
-	setOffTime : function(seconds) { self.player.setOffTime(seconds); },
-	connect : function(target) { self.player.connect(target); },
-	raw_key_on : false,
-	isOn : false,
-	keyOn : function() {
-	    self.raw_key_on = true;
-	    if ( ! self.isOn) {
-		self.player.keyOnAt(self.player.getCursor());
-		self.isOn = true;
-	    }
-	},
-	keyOff : function() {
-	    self.raw_key_on = false;
-	    if (self.isOn) {
-		self.player.keyOffAt(self.player.getCursor());
-		self.isOn = false;
-	    }
-	},
-	onfocus : function() { },
-	onblur : function() { self.keyOff(); },
-	// handlers for key events
-	onkeydown : function(event) { self.keyOn(); },
-	onkeyup : function(event) { self.keyOff(); },
-	// handlers for two button mouse
-	onmousedown : function(event) { self.keyOn(); },
-	onmouseup : function(event) { self.keyOff(); },
-	// handlers for touch buttons
-	ontouchstart : function(event, button) { console.log(event, button); },
-	ontouchend : function(event, button) { console.log(event, button); },
-	// handlers for MIDI
-	onmidievent : function(event) {
-	    if (event.data.length == 3) {
-		// console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
-		switch (event.data[0]&0xF0) {
-		case 0x90: self.keyon(); break;
-		case 0x80: self.keyOff(); break;
-		}
-	    }
-	},
+	    player : morse_code_player(context),
+	    setPitch : function(hertz) { self.player.setPitch(hertz); },
+	    setGain : function(gain) { self.player.setGain(gain); },
+	    setOnTime : function(seconds) { self.player.setOnTime(seconds); },
+	    setOffTime : function(seconds) { self.player.setOffTime(seconds); },
+	    connect : function(target) { self.player.connect(target); },
+	    raw_key_on : false,
+	    isOn : false,
+	    keyOn : function() {
+	        self.raw_key_on = true;
+	        if ( ! self.isOn) {
+		        self.player.keyOnAt(self.player.getCursor());
+		        self.isOn = true;
+	        }
+	    },
+	    keyOff : function() {
+	        self.raw_key_on = false;
+	        if (self.isOn) {
+		        self.player.keyOffAt(self.player.getCursor());
+		        self.isOn = false;
+	        }
+	    },
+        //
+        keydown : function(key) { self.keyOn(); },
+        keyup : function(key) { self.keyOff(); },
+        //
+	    onfocus : function() { },
+	    onblur : function() { self.keyOff(); },
+	    // handlers for MIDI
+	    onmidievent : function(event) {
+	        if (event.data.length == 3) {
+		        // console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
+		        switch (event.data[0]&0xF0) {
+		        case 0x90: self.keyon(); break;
+		        case 0x80: self.keyOff(); break;
+		        }
+	        }
+	    },
     };
     return self;
 }
 
 function morse_code_iambic_input(context) {
     var self = {
-	player : morse_code_player(context),
-	keyer : null,
-	setPitch : function(hertz) { self.player.setPitch(hertz); },
-	setGain : function(gain) { self.player.setGain(gain); },
-	setOnTime : function(seconds) { self.player.setOnTime(seconds); },
-	setOffTime : function(seconds) { self.player.setOffTime(seconds); },
-	setWPM : function(wpm) { self.keyer.setWpm(wpm); },
-	setDah : function(dah) { self.keyer.setDah(dah); },
-	setIes : function(ies) { self.keyer.setIes(ies); },
-	setSwapped : function(swapped) { self.keyer.setSwapped(swapped); },
-	connect : function(target) { self.player.connect(target); },
+	    player : morse_code_player(context),
+	    keyer : null,
+	    setPitch : function(hertz) { self.player.setPitch(hertz); },
+	    setGain : function(gain) { self.player.setGain(gain); },
+	    setOnTime : function(seconds) { self.player.setOnTime(seconds); },
+	    setOffTime : function(seconds) { self.player.setOffTime(seconds); },
+	    setWPM : function(wpm) { self.keyer.setWpm(wpm); },
+	    setDah : function(dah) { self.keyer.setDah(dah); },
+	    setIes : function(ies) { self.keyer.setIes(ies); },
+	    setSwapped : function(swapped) { self.keyer.setSwapped(swapped); },
+	    connect : function(target) { self.player.connect(target); },
 
-	raw_dit_on : false,
-	raw_dah_on : false,
-	// handlers for focus
-	onfocus : function() { self.start(); },
-	onblur : function() { self.stop(); },
-	// handlers for key events
-	onkeydown : function(event) { self.keydown((event.keyCode&1)==0); },
-	onkeyup : function(event) { self.keyup((event.keyCode&1)==0); },
-	// handlers for two button mouse
-	onmousedown : function(event) { self.keydown(event.button == 0); },
-	onmouseup : function(event) { self.keyup(event.button == 0); },
-	// handlers for touch buttons
-	ontouchstart : function(event, button) { console.log(event, button); },
-	ontouchend : function(event, button) { console.log(event, button); },
-	// handlers for MIDI
-	onmidievent : function(event) {
-	    if (event.data.length == 3) {
-		// console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
-		switch (event.data[0]&0xF0) {
-		case 0x90: self.keydown(event.data[1]&1); break;
-		case 0x80: self.keyup(event.data[1]&1); break;
-		}
+	    raw_dit_on : false,
+	    raw_dah_on : false,
+	    // handlers for focus
+	    onfocus : function() { self.start(); },
+	    onblur : function() { self.stop(); },
+	    // handlers for MIDI
+	    onmidievent : function(event) {
+	        if (event.data.length == 3) {
+		        // console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
+		        switch (event.data[0]&0xF0) {
+		        case 0x90: self.keydown(event.data[1]&1); break;
+		        case 0x80: self.keyup(event.data[1]&1); break;
+		        }
+	        }
+	    },
+	    // common handlers
+	    keydown : function(key) {
+	        if (key) self.raw_dit_on = true; else self.raw_dah_on = true;
+	        self.intervalFunction();
+	    },
+	    keyup : function(key) {
+	        if (key) self.raw_dit_on = false; else self.raw_dah_on = false;
+	        self.intervalFunction();
+	    },
+	    intervalLast : context.currentTime,
+	    intervalFunction : function() {
+	        var time = context.currentTime;
+	        var tick = time - self.intervalLast;
+	        self.intervalLength = (self.intervalLength + tick) / 2;
+	        self.intervalLast = time;
+	        self.keyer.clock(self.raw_dit_on, self.raw_dah_on, tick);
+	    },
+	    interval : null,
+	    start : function() {
+	        if (self.interval) {
+		        self.stop();
+	        }
+	        self.interval = setInterval(self.intervalFunction, 1);
+	    },
+	    stop : function() {
+	        if (self.interval) {
+		        clearInterval(self.interval);
+		        self.interval = null;
+	        }
+	        self.raw_dit_on = false;
+	        self.raw_dah_on = false;
+	        self.player.cancel();
 	    }
-	},
-	// common handlers
-	keydown : function(key) {
-	    if (key) self.raw_dit_on = true; else self.raw_dah_on = true;
-	    self.intervalFunction();
-	},
-	keyup : function(key) {
-	    if (key) self.raw_dit_on = false; else self.raw_dah_on = false;
-	    self.intervalFunction();
-	},
-	intervalLast : context.currentTime,
-	intervalFunction : function() {
-	    var time = context.currentTime;
-	    var tick = time - self.intervalLast;
-	    self.intervalLength = (self.intervalLength + tick) / 2;
-	    self.intervalLast = time;
-	    self.keyer.clock(self.raw_dit_on, self.raw_dah_on, tick);
-	},
-	interval : null,
-	start : function() {
-	    if (self.interval) {
-		self.stop();
-	    }
-	    self.interval = setInterval(self.intervalFunction, 1);
-	},
-	stop : function() {
-	    if (self.interval) {
-		clearInterval(self.interval);
-		self.interval = null;
-	    }
-	    self.raw_dit_on = false;
-	    self.raw_dah_on = false;
-	    self.player.cancel();
-	}
     };
     self.keyer = morse_code_iambic_keyer(self.player);
     return self;
@@ -921,54 +907,54 @@ function morse_code_iambic_input(context) {
 
 function morse_code_midi_input() {
     var self = {
-	midiOptions : { },
-	midi : null,  // global MIDIAccess object
-	onMIDIMessage : function ( event ) {
-	    var str = "MIDI message received at timestamp " + event.timestamp + "[" + event.data.length + " bytes]: ";
-	    for (var i=0; i<event.data.length; i++) {
-		str += "0x" + event.data[i].toString(16) + " ";
-	    }
-	    console.log( str );
-	},
-	onMIDISuccess : function( midiAccess ) {
-	    // console.log( "MIDI ready!" );
-	    self.midi = midiAccess;
-	},
-	onMIDIFailure : function(msg) {
-	    // console.log( "Failed to get MIDI access - " + msg );
-	},
-	names : function() {
-	    var names = [];
-	    if (self.midi)
-		for (var x of self.midi.inputs.values())
-		    names.push(x.name);
-	    return names;
-	},
-	connect : function(name, handler) {
-	    if (self.midi) {
-		for (var x of self.midi.inputs.values()) {
-		    if (x.name == name) {
-			x.onmidimessage = handler;
-			// console.log("installing handler for "+name);
-		    }
-		}
-	    }
-	},
-	disconnect : function(name) {
-	    if (self.midi) {
-		for (var x of self.midi.inputs.values()) {
-		    if (x.name == name) {
-			// console.log("uninstalling handler for "+name);
-			x.onmidimessage = null;
-		    }
-		}
-	    }
-	},
+	    midiOptions : { },
+	    midi : null,  // global MIDIAccess object
+	    onMIDIMessage : function ( event ) {
+	        var str = "MIDI message received at timestamp " + event.timestamp + "[" + event.data.length + " bytes]: ";
+	        for (var i=0; i<event.data.length; i++) {
+		        str += "0x" + event.data[i].toString(16) + " ";
+	        }
+	        console.log( str );
+	    },
+	    onMIDISuccess : function( midiAccess ) {
+	        // console.log( "MIDI ready!" );
+	        self.midi = midiAccess;
+	    },
+	    onMIDIFailure : function(msg) {
+	        // console.log( "Failed to get MIDI access - " + msg );
+	    },
+	    names : function() {
+	        var names = [];
+	        if (self.midi)
+		        for (var x of self.midi.inputs.values())
+		            names.push(x.name);
+	        return names;
+	    },
+	    connect : function(name, handler) {
+	        if (self.midi) {
+		        for (var x of self.midi.inputs.values()) {
+		            if (x.name == name) {
+			            x.onmidimessage = handler;
+			            // console.log("installing handler for "+name);
+		            }
+		        }
+	        }
+	    },
+	    disconnect : function(name) {
+	        if (self.midi) {
+		        for (var x of self.midi.inputs.values()) {
+		            if (x.name == name) {
+			            // console.log("uninstalling handler for "+name);
+			            x.onmidimessage = null;
+		            }
+		        }
+	        }
+	    },
     };
     if (navigator.requestMIDIAccess) {
-	navigator.requestMIDIAccess().then( self.onMIDISuccess, self.onMIDIFailure );
+	    navigator.requestMIDIAccess().then( self.onMIDISuccess, self.onMIDIFailure );
     } else {
-	console.log("no navigator.requestMIDIAccess found");
+	    console.log("no navigator.requestMIDIAccess found");
     }
     return self;
 }
@@ -1011,56 +997,54 @@ function morse_code_station() {
     var context = new (window.AudioContext || window.webkitAudioContext)();
 
     var self = {
-	key_type : null,
-	key_type_select : function(key_type) {
+	    key_type : null,
+	    key_type_select : function(key_type) {
             if (self.key_type) self.input[self.key_type].onblur();
-	    self.key_type = key_type;
-	    self.input.onfocus=self.input[key_type].onfocus;
-	    self.input.onblur=self.input[key_type].onblur;
-	    self.input.onkeydown=self.input[key_type].onkeydown;
-	    self.input.onkeyup=self.input[key_type].onkeyup;
-	    self.input.onmousedown=self.input[key_type].onmousedown;
-	    self.input.onmouseup=self.input[key_type].onmouseup;
-	    self.input.onmidievent=self.input[key_type].onmidievent;
-	    if (self.key_input) key_input_select(self.key_input);
-	},
-	key_input : null,
-	key_input_select : function(key_input) {
-	    if (self.key_input != key_input)
-		self.midi_key.disconnect(self.key_input)
-	    self.key_input = key_input;
-	    self.midi_key.connect(key_input, self.input.onmidievent)
-	},
+	        self.key_type = key_type;
+	        self.input.onfocus=self.input[key_type].onfocus;
+	        self.input.onblur=self.input[key_type].onblur;
+	        self.input.onmidievent=self.input[key_type].onmidievent;
+	        self.input.keydown=self.input[key_type].keydown;
+	        self.input.keyup=self.input[key_type].keyup;
+	        if (self.key_input) key_input_select(self.key_input);
+	    },
+	    key_input : null,
+	    key_input_select : function(key_input) {
+	        if (self.key_input != key_input)
+		        self.midi_key.disconnect(self.key_input)
+	        self.key_input = key_input;
+	        self.midi_key.connect(key_input, self.input.onmidievent)
+	    },
 
-	output : morse_code_output(context),
-	output_detoner : morse_code_detone(context),
-	output_detimer : morse_code_detime(context),
-	output_decoder : morse_code_decode(context),
+	    output : morse_code_output(context),
+	    output_detoner : morse_code_detone(context),
+	    output_detimer : morse_code_detime(context),
+	    output_decoder : morse_code_decode(context),
 
-	input : morse_code_input(context),
-	input_detoner : morse_code_detone(context),
-	input_detimer : morse_code_detime(context),
-	input_decoder : morse_code_decode(context),
-	midi_key : morse_code_midi_input(),
+	    input : morse_code_input(context),
+	    input_detoner : morse_code_detone(context),
+	    input_detimer : morse_code_detime(context),
+	    input_decoder : morse_code_decode(context),
+	    midi_key : morse_code_midi_input(),
     };
 
     var TEST_DETONER = false;
 
     self.output.connect(context.destination);
     if (TEST_DETONER) {
-	self.output.connect(self.output_detoner.getTarget());
-	self.output_detoner.on('transition', self.output_detimer.ontransition);
+	    self.output.connect(self.output_detoner.getTarget());
+	    self.output_detoner.on('transition', self.output_detimer.ontransition);
     } else {
-	self.output.player.on('transition', self.output_detimer.ontransition);
+	    self.output.player.on('transition', self.output_detimer.ontransition);
     }
     self.output_detimer.on('element', self.output_decoder.onelement);
 
     self.input.connect(context.destination);
     if (TEST_DETONER) {
-	self.input.connect(self.input_detoner.getTarget());
-	self.input_detoner.on('transition', self.input_detimer.ontransition);
+	    self.input.connect(self.input_detoner.getTarget());
+	    self.input_detoner.on('transition', self.input_detimer.ontransition);
     } else {
-	self.input.straight.player.on('transition', self.input_detimer.ontransition);
+	    self.input.straight.player.on('transition', self.input_detimer.ontransition);
     }
     self.input.iambic.player.on('transition', self.input_detimer.ontransition);
 
