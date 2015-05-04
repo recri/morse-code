@@ -96,49 +96,53 @@ textarea {
    ========================================================================== */
 
 .page {
-      margin-left: auto;
-      margin-right: auto;
-      text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
 }
 .center {
 	margin-left: auto;
 	margin-right: auto;
 	width: 100%;
-        text-align: center;
+    text-align: center;
 }
 #output_text, #input_text {
-      height:240px;
-      width:75%;
-      border:1px solid #ccc;
-      font:16px/26px Georgia, Garamond, Serif;
-      overflow:auto;
+    height:240px;
+    width:75%;
+    border:1px solid #ccc;
+    font:16px/26px Georgia, Garamond, Serif;
+    overflow:auto;
 }
 #key_focus {
-        border:5px;
+    border:5px;
 }
 .text {
 	margin-left: auto;
 	margin-right: auto;
 	width: 100%;
-        text-align: left;
+    text-align: left;
 }
 button {
-      margin: 10px;
+    margin: 10px;
 }
 .button {
-      height: 80px;
-      -moz-border-radius: 10px;
-      -webkit-border-radius: 10px;
-      border-radius: 10px;
+    height: 80px;
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+    border: 2px solid #dadada;
+}
+.button:focus {
+    outline: none;
+    border-color: #9ecaed;
+    box-shadow: 0 0 10px #9ecaed;
 }
 .button.double {
-      width: 160px;
+    width: 160px;
 }
 .button.single {
       width: 80px;
 }
-
-
 
 
 
