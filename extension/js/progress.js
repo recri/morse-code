@@ -157,7 +157,10 @@ function study_progress(word_list, station) {
 	    },
         worst : function(n) {
             var worst = [];
-            for (var x in self.words) worst.push(x);
+            for (var x in self.words) {
+                console.log("worst.push("+x+")");
+                worst.push(x);
+            }
             return worst;
         },
         session_review : function() {
@@ -240,5 +243,7 @@ function study_progress_restore(name) {
     var table = morse_code_table(save.table_name);
     var word_list = word_list_by_name(save.word_list_name, table, save.word_list_next_i);
     var station = morse_code_station(save.station_params);
-    return study_progress(word_list, station);
+    var progress = study_progress(word_list, station);
+    progress.words = save.words;
+    return progress;
 }
