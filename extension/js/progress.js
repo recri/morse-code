@@ -158,7 +158,7 @@ function study_progress(word_list, station) {
         worst : function(n) {
             var worst = [];
             for (var x in self.words) {
-                console.log("worst.push("+x+")");
+                // console.log("worst.push("+x+")");
                 worst.push(x);
             }
             return worst;
