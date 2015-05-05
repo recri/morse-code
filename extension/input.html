@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html class="no-js" lang="">
   <head>
@@ -24,21 +26,21 @@
       <div id="key_buttons"></div>
       <div class="center">
 	<h2>Key Type</h2>
-	<form id="key_type" onchange="station_ui.key_type_select()">
+	<form id="key_type" onchange="station.ui.key_type_select()">
 	  <input type="radio" name="key_type" value="straight" align="left">Straight Key<br/>
 	  <input type="radio" name="key_type" value="iambic" align="left" checked>Iambic Key<br/>
 	</form>
-	<form id="input_swap" onchange="station_ui.input_swap_paddles('input_swap')">
+	<form id="input_swap" onchange="station.ui.input_swap_paddles('input_swap')">
 	  <input type="checkbox" name="input_swap" value="1">Swap Paddles</input>
 	</form>
 	<h2>MIDI Device</h2>
-	<form id="key_midi_input" onchange="station_ui.key_midi_input_select('key_midi_input')">
+	<form id="key_midi_input" onchange="station.ui.key_midi_input_select('key_midi_input')">
 	  <!--
 	      <input type="radio" name="key_midi_input" value="midi">MIDI<br/>
 	  -->
 	</form>
 	<form id="recheck_midi">
-	  <button type="button" onclick="station_ui.key_midi_input_regenerate_list()">Recheck MIDI</button>
+	  <button type="button" onclick="station.ui.key_midi_input_regenerate_list()">Recheck MIDI</button>
 	</form>
 
 	<h2>Input</h2>
@@ -56,17 +58,18 @@
     <script src="js/morse.js"></script>
     <script src="js/ui.js"></script>
     <script>
-      var station = morse_code_station();
-      var station_ui = morse_code_ui(station);
-      station.input_decoder.on('letter', function(ltr, code) {
-        var elt = document.getElementById("input_text");
-        elt.textContent += ltr;
-        elt.scrollTop = 1000;
-      });
+      var station;
       function onLoadHandler() {
-        station_ui.input_controls();
-        station_ui.input_keyboard();
-        station_ui.input_touch('key_buttons');
+        station = morse_code_station();
+        station.ui = morse_code_ui(station);
+        station.input_decoder.on('letter', function(ltr, code) {
+          var elt = document.getElementById("input_text");
+          elt.textContent += ltr;
+          elt.scrollTop = 1000;
+        });
+        station.ui.input_controls();
+        station.ui.input_keyboard();
+        station.ui.input_touch('key_buttons');
       };
     </script>
   </body>

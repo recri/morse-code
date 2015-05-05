@@ -25,7 +25,7 @@
 //
 // make the object for maintaining progress
 //
-//  sessions/lessson either
+//  sessions/lesson either
 //  1) Present a collection of new words for study
 //	chosen in order of increasing difficulty
 //  2) Present a collections of old words for review
@@ -48,130 +48,197 @@
 //
 
 function study_progress(word_list, station) {
-    var self = {
-	word_list : word_list,	// the word list we are studying
-	station : station,	// the tester we use to examine the student
-	table : station.output.table,
-	next_i : 0,		// how far through the list we've gotten
-	words : {},		// the dictionary of words studied
-				// number of times seen, recording percent correct, 
-	current : "",		// current word
-	session : {
-	    words : ["e", "t", "i" ],
-	    tests : []
-	},		// current session, like words but for this session
-
-	input_text : "",
-	output_text : "",
-	input_code : "",
-	output_code : "",
-
-	test_output_time : 0,
-	test_input_time : 0,
-
-	clear_output : function() {
-	    self.output_text = "";
-	    self.output_code = "";
-	    self.test_output_time = Date.now(); // time in milliseconds since epoch
-	},
-	clear_input : function() {
-	    self.input_text = "";
-	    self.input_code = "";
-	},
-	send : function() {
-	    self.station.output.send(self.current);
-	},
-	test : function(word) {
-	    self.clear_input();
-	    self.clear_output();
-	    self.send();
-	},
-	onoutputletter : function(ltr, code) {
-	    // console.log("onoutputletter("+ltr+", "+code+")");
-	    self.output_text += ltr;
-	    self.output_code += code;
-	    var output = self.output_text.trim().toLowerCase();
-	    if (output == self.current) {
-		var now = Date.now()
-		self.test_input_time = now;
-		self.test_output_time = now - self.test_output_time;
-		// console.log("send("+self.current+") completed in "+self.test_time+"ms");
-	    }
-	},
-	oninputletter : function(ltr, code) {
-	    self.input_text += ltr;
-	    self.input_code += code;
-	    // console.log("oninputletter "+self.input_text+" vs "+self.current);
-	    if (self.input_text.trim().endsWith(self.current)) {
-		self.next();
-	    }
-	},
-	score_last : function() {
-	    self.test_input_time = Date.now() - self.test_input_time;
-	    var timescore = self.test_input_time/self.test_output_time;
-	    var input = self.input_text.trim();
-	    var score = Math.round(100*self.table.ditLength(input)/self.table.ditLength(self.current));
-	    console.log("score_last "+input+" t "+timescore+" "+score+"");
-	    self.session.tests.push([self.current, timescore, score]);
-	},
-	pick : function(list) {
+    function pick(list) {
 	    return list[Math.floor(Math.random()*list.length)];
-	},
-	next_word : function() {
-	    self.current = self.pick(self.session.words);
-	    // console.log("next_word: "+self.current);
-	},
-	continue : function() {
-	    // console.log("continue");
-	    self.next_word();
-	    self.test();
-	},
-	next : function() {
-	    // console.log("next");
-	    self.score_last();
-	    self.continue();
-	},
-	again : function() {
-	    // console.log("again");
-	    self.clear_output();
-	    self.send();
-	},
-	start : function() {
-	    // console.log("start");
-	    self.session = {
-		words : self.word_list.next(10),
-		tests : []
-	    };
-	    self.continue();
-	},
-	restart : function() {
-	    // console.log("restart");
-	    self.start();
-	},
-	stop : function() {
-	    // console.log("stop");
-	    self.current = null;
-	},
-	setSpeed : function(wpm) {
-	    self.station.output.setWPM(wpm);
-	    self.station.input.setWPM(wpm);
-	    document.getElementById('speed').innerText = ""+wpm;
-	},
-	getSpeed : function() { return self.station.output.wpm },
-	faster : function() { self.setSpeed(self.getSpeed()+2.5); },
-	slower : function() { self.setSpeed(self.getSpeed()-2.5); },
-	onagain : function() { self.again(); },
-	onnext : function() { self.next(); },
-	onstart : function() { self.start(); },
-	onrestart : function() { self.restart(); },
-	onstop : function() { self.stop(); },
-	onslower : function() { self.slower(); },
-	onfaster : function() { self.faster(); },
-	
+	}
+    function progress_bar(id, val, max) {
+        var p = document.getElementById(id);
+        p.max = max;
+        p.value = val;
+        p.innerText = ""+val+"/"+max;
+    }
+    var ITEMS_PER_SESSION = 5, REPS_PER_SESSION = 5;
+
+    var self = {
+	    word_list : word_list,	// the word list we are studying
+	    station : station,      // the tester we use to examine the student
+	    table : station.output.table,
+	    words : {},             // the dictionary of words studied
+		// number of times seen, recording percent correct,
+	    current : "",           // current word
+	    session : {             // current session, like words but for this session
+            reps_to_do : ITEMS_PER_SESSION*REPS_PER_SESSION,
+            reps_done : 0,
+	        words : ["e", "t", "i", "ee", "a", "n", "s"],
+	        tests : []
+	    },
+
+	    input_text : "",
+	    output_text : "",
+	    input_code : "",
+	    output_code : "",
+
+        test_output_time : 0,
+
+	    onoutputletter : function(ltr, code) {
+	        // console.log("onoutputletter("+ltr+", "+code+")");
+	        self.output_text += ltr;
+	        self.output_code += code;
+	    },
+	    oninputletter : function(ltr, code) {
+	        self.input_text += ltr;
+	        self.input_code += code;
+	        // console.log("oninputletter "+self.input_text+" vs "+self.current);
+	        if (self.input_text.trim().endsWith(self.current)) {
+		        self.test_next();
+	        }
+	    },
+	    test_word : function() {
+            // test a word
+	        self.input_text = "";
+	        self.input_code = "";
+	        self.output_text = "";
+	        self.output_code = "";
+            self.station.output.send(self.current);
+	        self.test_output_time = Date.now(); // time in milliseconds since epoch
+	    },
+	    test_again : function() {
+            // test a word again, ie send it once more
+	        self.output_text = "";
+	        self.output_code = "";
+            self.station.output.send(self.current);
+	    },
+	    test_score : function() {
+	        self.session.reps_done += 1;
+            var test_output_length = self.table.ditLength(self.current)*self.msPerDit; // length of code to be sent
+            var test_input_length = Math.max(Date.now() - (self.test_output_time+test_output_length), test_output_length);
+	        var timescore = test_input_length/test_output_length;
+	        var input = self.input_text.trim();
+	        var lenscore = self.table.ditLength(input)/self.table.ditLength(self.current);
+	        self.session.tests.push([self.current, timescore, lenscore]);
+	    },
+	    test_next : function() {
+	        // console.log("test_next");
+	        self.test_score();
+            if (self.session.reps_done == self.session.reps_to_do) {
+                self.session_progress();
+                self.session_score()
+            } else {
+	            self.session_continue();
+            }
+	    },
+        //
+        session_progress : function() {
+            progress_bar('session_progress', self.session.reps_done, self.session.reps_to_do);
+        },
+	    session_continue : function() {
+	        // console.log("continue");
+            self.session_progress();
+	        self.current = pick(self.session.words);
+	        self.test_word();
+	    },
+        session_score : function() {
+            var n = self.session.tests.length;
+            for (var i = 0; i < n; i += 1) {
+                var t = self.session.tests[i]
+                self.progress_score_word(t[0], t[1], t[2]);
+            }
+            self.progress_progress();
+        },
+	    session_start : function() {
+	        // console.log("start");
+	        self.session = {
+                reps_to_do : ITEMS_PER_SESSION * REPS_PER_SESSION,
+                reps_done : 0,
+		        words : self.word_list.next(ITEMS_PER_SESSION),
+		        tests : []
+	        };
+	        self.session_continue();
+	    },
+        worst : function(n) {
+            var worst = [];
+            for (var x in self.words) worst.push(x);
+            return worst;
+        },
+        session_review : function() {
+            self.session =  {
+                reps_to_do : ITEMS_PER_SESSION * REPS_PER_SESSION,
+                reps_done : 0,
+		        words : self.worst(ITEMS_PER_SESSION),
+		        tests : []
+            };
+            self.session_continue();
+        },
+	    session_restart : function() {
+	        // console.log("restart");
+            if (self.session && self.session.current) {
+                self.session.reps_done = 0;
+                self.session.tests = [];
+                self.session_continue();
+            } else {
+	            self.session_start();
+            }
+	    },
+        //
+        progress_progress : function() {
+            progress_bar('training_progress', self.word_list.next_i, self.word_list.length);
+        },
+        progress_score_word : function(word, tscore, lscore) {
+            var w = self.words[word];
+            if ( ! w ) {
+                w = { n : 1, avg_tscore : tscore, avg_lscore : lscore, davg_tscore : tscore, davg_lscore : lscore }
+            } else {
+                w.n += 1;
+                w.avg_tscore = (w.avg_tscore * (w.n -1) + tscore) / w.n;
+                w.avg_lscore = (w.avg_lscore * (w.n -1) + lscore) / w.n;
+                w.davg_tscore = (w.davg_tscore + tscore) / 2;
+                w.davg_lscore = (w.davg_lscore + lscore) / 2;
+            }
+            self.words[word] = w;
+        },
+        progress_save : function() {
+            var save = {
+                word_list_name : self.word_list.name,
+                word_list_next_i : self.word_list.next_i,
+                table_name : self.table.name,
+                station_params : self.station.get_params(),
+                words : self.words
+            };
+            localStorage.setItem(save.word_list_name, JSON.stringify(save));
+            // console.log('progress_save('+save.word_list_name+', '+localStorage[save.word_list_name]);
+        },
+        //
+	    setSpeed : function(wpm) {
+	        self.station.output.setWPM(wpm);
+	        self.station.input.setWPM(wpm);
+            self.msPerDit = 1/(wpm * 50 * (1/60) * (1/1000)); // 1 / (words/minute * dits/word * minutes/second * second/millisecond)
+	        document.getElementById('speed').innerText = ""+wpm;
+	    },
+	    getSpeed : function() { return self.station.output.wpm },
+	    faster : function() { self.setSpeed(self.getSpeed()+2.5); },
+	    slower : function() { self.setSpeed(self.getSpeed()-2.5); },
+	    onagain : function() { self.test_again(); },
+	    onnext : function() { self.test_next(); },
+	    onstart : function() { self.session_start(); },
+	    onreview : function() { self.session_review(); },
+        onsave : function() { self.progress_save(); },
+
+	    onslower : function() { self.slower(); },
+	    onfaster : function() { self.faster(); },
+
     };
 
     self.station.input_decoder.on('letter', function(ltr, code) { self.oninputletter(ltr, code); });
     self.station.output_decoder.on('letter', function(ltr, code) { self.onoutputletter(ltr, code); });
     self.setSpeed(self.getSpeed());
     return self;
+}
+
+function study_progress_restore(name) {
+    // console.log('study_progress_restore('+name+', '+localStorage[name]+')');
+    var save = JSON.parse(localStorage.getItem(name));
+    var table = morse_code_table(save.table_name);
+    var word_list = word_list_by_name(save.word_list_name, table, save.word_list_next_i);
+    var station = morse_code_station(save.station_params);
+    return study_progress(word_list, station);
 }

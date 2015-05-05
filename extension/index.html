@@ -1,40 +1,48 @@
 <!DOCTYPE html>
 <html class="no-js" lang="">
-  <head>
+    <head>
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
-	<title>Morse Code</title>
+	    <title>Morse Code</title>
         <meta name="description" content="morse code in javascript">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="css/normalize.css">
         <link rel="stylesheet" href="css/main.css">
         <script src="js/vendor/modernizr-2.8.3.min.js"></script>
-  </head>
-  <body>
-    <!--[if lt IE 8]>
-        <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
-    <![endif]-->
-    <div class="page">
-      <div class="center">
-	<h1>Morse Code</h1>
-	Morse code is the original digital communications medium.
-	<h2>Text Output</h2>
-	This <a href="output.html">output</a> page will let you enter text and hear it translated into morse code.
-	<h2>Key Input</h2>
-	This <a href="input.html">input</a> page will let you key in morse code with a straight key or iambic paddle.
-	<h2>Audio Decoding</h2>
-	This <a href="decoding.html">decoding</a> page will listen to morse code over your computer's microphone and decode it.
-	<h2>Training</h2>
-	This <a href="training.html">training game</a> page will play morse code patterns for you to repeat back.
-	<h2>WebRTC</h2>
-	This <a href="webrtc.html">WebRTC</a> page will allow you to practice morse code with other people over the internet.
-      </div>
-    </div>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-    <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.3.min.js"><\/script>')</script>
-    <script src="js/plugins.js"></script>
-    <script src="js/main.js"></script>
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+            <![endif]-->
+        <div class="page">
+            <div class="center">
+	            <h1>Morse Code</h1>
+	            Morse code is the original digital communications medium.
+	            <h2>Text Output</h2>
+	            This <a href="output.html">output</a> page will let you enter text and hear it translated into morse code.
+	            <h2>Key Input</h2>
+	            This <a href="input.html">input</a> page will let you key in morse code with a straight key or iambic paddle.
+	            <h2>Audio Decoding</h2>
+	            This <a href="decoding.html">decoding</a> page will listen to morse code over your computer's microphone and decode it.
+	            <h2>Training</h2>
+	            The training game page will play morse code patterns for you to repeat back.  You can have the patterns chosen from the following categories:
+                <ul id="vocabularies"></ul>
+	            <h2>WebRTC</h2>
+	            This <a href="webrtc.html">WebRTC</a> page will allow you to practice morse code with other people over the internet.
+            </div>
+        </div>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.3.min.js"><\/script>')</script>
+        <script src="js/plugins.js"></script>
+        <script src="js/main.js"></script>
+        <script src="js/words.js"></script>
+        <script>
+            var ul = document.getElementById('vocabularies');
+            ul.innerHTML = "";
+            var dict = word_list_names();
+            for (var i in dict) {
+              ul.innerHTML += '<li><a href="training.html?'+i+'">'+dict[i]+'</a></li>\n';
+            }
+        </script
   </body>
 </html>
-
-

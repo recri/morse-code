@@ -1,21 +1,28 @@
 * Items to be done here
 ** Overall
-*** Adopt the html5boilerplate to cover all the issues I haven't discovered let alone solved
+*** [x] Adopt the html5boilerplate to cover all the issues I haven't discovered let alone solved
+** UI
+*** [ ] Layout sliders so that the values are aligned on the right and the titles are aligned on the left
 ** Output
-*** Slow down element encoding so the decoding will happen with the audio
+*** [ ] Slow down element encoding so the decoding will happen with the audio
 ** Input
-*** Detect touchscreen and implement buttons sensitive to touchstart/touchend
-*** Get rid of focus input element, put listeners on html element
+*** [x] Detect touchscreen and implement buttons sensitive to touchstart/touchend
+*** [x] Get rid of focus input element, put listeners on html element
 ** Audio decoder
-*** acquire an audio input channel
-*** set up a binary search of Goertzel filters to find active cw channels
-*** create a Goertzel filter for each active cw channel
-*** decode each channel
-*** maybe display fft and waterfall for audio channel
+*** [ ] acquire an audio input channel
+*** [ ] set up a binary search of Goertzel filters to find active cw channels
+*** [ ] create a Goertzel filter for each active cw channel
+*** [ ] decode each channel
+*** [ ] maybe display fft and waterfall for audio channel
 ** Trainer
-*** Determine new/review/mixed session structure
-*** Flashy graphics for progress through session
-*** Flashy graphics for cumulative progress over sessions
-*** Select training set
-*** Persist progress between sessions
+*** [ ] Determine new/review/mixed session structure
+*** [x] Flashy graphics for progress through session
+    html5 <progress value="10" max="100"></progress>
+*** [x] Flashy graphics for cumulative progress over sessions
+*** [x] Select training set
+*** [x] Persist progress between sessions
 ** WebRTC
+*** [ ] Set up signalmaster on ec2
+*** [ ] Make connections
+*** [ ] Dispatch OSC
+*** [ ] Smooth out time discontinuities

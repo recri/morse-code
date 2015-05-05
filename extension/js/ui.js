@@ -111,7 +111,7 @@ function morse_code_ui(station) {
         },
         input_swap_paddles : function(name) {
             var value = document.getElementsByName(name)[0].checked;
-            console.log("input_swap_paddles "+value);
+            // console.log("input_swap_paddles "+value);
             station.input.setSwapped(value);
         },
         input_controls : function() {

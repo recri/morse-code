@@ -1,83 +1,101 @@
 <!DOCTYPE html>
 <html class="no-js" lang="">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>Morse Code Training</title>
-    <meta name="description" content="morse code training">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="css/normalize.css">
-    <link rel="stylesheet" href="css/main.css">
-    <script src="js/vendor/modernizr-2.8.3.min.js"></script>
-  </head>
-  <body onload="onLoadHandler()">
-    <!--[if lt IE 8]>
-        <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
-	<![endif]-->
-    <div class="page" id="page">
-      <h1>Morse Code Training</h1>
-      <div id="training_progress"></div>
-      <div id="training_controls">
- 	<button onclick="progress.onnext()">Next</button>
-	<button onclick="progress.onagain()">Again</button>
-	<br/>
-	<button onclick="progress.onstart()">Start</button>
-        <button onclick="progress.onrestart()">Restart</button>
-        <button onclick="progress.onstop()">Stop</button>
-        <br/>
-        <button onclick="progress.onslower()">Slower</button>
-        <span id="speed">15</span>WPM
-        <button onclick="progress.onfaster()">Faster</button>
-      </div>
-      <div id="key_buttons"></div>
-      <p>
-	Practice morse code by imitating the code sent by your computer.
-      </p><p>
-	Your CTRL and ALT keys should act as dit and dah paddles.
-	Pressing one will send a string of dits,
-	pressing the other will send a string of dahs,
-	and pressing both will send a string of di-dahs or dah-dits.
-      </p>
-    </div>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-    <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.3.min.js"><\/script>')</script>
-    <script src="js/plugins.js"></script>
-    <script src="js/main.js"></script>
-    <script src="js/morse.js"></script>
-    <script src="js/words.js"></script>
-    <script src="js/progress.js"></script>
-    <script>
-      var station, progress;
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>Morse Code Training</title>
+        <meta name="description" content="morse code training">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="css/normalize.css">
+        <link rel="stylesheet" href="css/main.css">
+        <script src="js/vendor/modernizr-2.8.3.min.js"></script>
+    </head>
+    <body onload="onLoadHandler()">
+        <!--[if lt IE 8]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+	        <![endif]-->
+        <div class="page" id="page">
+            <h1>Morse Code Training</h1>
+            <div id="progress">
+                Progress <progress id="training_progress" value="0" max="100">0/100</progress>
+                <br>
+                Session <progress id="session_progress" value="0" max="100">0/100</progress>
+            </div>
+            <div id="training_controls">
+ 	            <button onclick="progress.onnext()">Skip to Next</button>
+	            <button onclick="progress.onagain()">Repeat Again</button>
+	            <br/>
+	            <button onclick="progress.onstart()">Start New</button>
+                <button onclick="progress.onreview()">Start Review</button>
+                <button onclick="progress.onsave()">Save Progress</button>
+                <button onclick="progress.ondelete()">Delete Progress</button>
+                <br/>
+                <button onclick="progress.onslower()">Slower</button>
+                <span id="speed">15</span>WPM
+                <button onclick="progress.onfaster()">Faster</button>
+            </div>
+            <div id="key_buttons"></div>
+            <p>
+	            Practice morse code by imitating the code sent by your computer.
+            </p><p>
+	            Your CTRL and ALT keys should act as dit and dah paddles.
+	            Pressing one will send a string of dits,
+	            pressing the other will send a string of dahs,
+	            and pressing both will send a string of di-dahs or dah-dits.
+            </p>
+        </div>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.3.min.js"><\/script>')</script>
+            <script src="js/plugins.js"></script>
+            <script src="js/main.js"></script>
+            <script src="js/morse.js"></script>
+            <script src="js/ui.js"></script>
+            <script src="js/words.js"></script>
+            <script src="js/progress.js"></script>
+            <script>
+                var station, station_ui, progress;
 
-      function onLoadHandler() {
+                function onLoadHandler() {
+                  var SPEED = 15;
 
-      station = morse_code_station();
+                  var query = location.search.substring(1);
+                  if (localStorage[query]) {
+                    progress = study_progress_restore(query);
+                    station = progress.station;
+                    station_ui = morse_code_ui(station);
+                  } else {
+                    station = morse_code_station();
+                    station_ui = morse_code_ui(station);
+                    progress = study_progress(word_list_by_name(query, station.table), station);
 
-      station.input.setPitch(550);
-      station.input.setGain(0.05);
-      station.input.setWPM(15);
-      station.input.setOnTime(0.004);
-      station.input.setOffTime(0.004);
+                    station.input.setPitch(550);
+                    station.input.setGain(0.05);
+                    station.input.setWPM(SPEED);
+                    station.input.setOnTime(0.004);
+                    station.input.setOffTime(0.004);
 
-      station.output.setPitch(600);
-      station.output.setGain(0.05);
-      station.output.setWPM(15);
-      station.output.setOnTime(0.004);
-      station.output.setOffTime(0.004);
+                    station.output.setPitch(600);
+                    station.output.setGain(0.05);
+                    station.output.setWPM(SPEED);
+                    station.output.setOnTime(0.004);
+                    station.output.setOffTime(0.004);
 
-      station.key_type_select('iambic');
-      station.input.setSwapped(true);
+                    station.key_type_select('iambic');
+                    station.input.setSwapped(true);
+                  }
 
-      progress = study_progress(word_list_comb(station.table), station);
+                  // make the speed consistent
+                  progress.setSpeed(station.input.wpm);
 
-      // keydown/keyup events on html element
-      morse_code_keyboard_input(station);
+                  // keydown/keyup events on html element
+                  station_ui.input_keyboard();
 
-      // touch/mouse events on key buttons
-      morse_code_touch_input('key_buttons', station);
+                  // touch/mouse events on key buttons
+                  station_ui.input_touch('key_buttons');
 
-      station.input.iambic.onfocus();
-      }
+                  // start the keyer running
+                  station.input.iambic.onfocus();
+                }
     </script>
   </body>
 </html>
