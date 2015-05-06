@@ -86,8 +86,7 @@ function study_progress(word_list, station) {
 	    session : {             // current session, like words but for this session
             reps_to_do : ITEMS_PER_SESSION*REPS_PER_ITEM,
             reps_done : 0,
-            tscore : 0,
-            lscore : 0,
+            score : 0,
 	        words : ["e", "t", "i", "ee", "a", "n", "s"],
 	        tests : []
 	    },
@@ -135,10 +134,10 @@ function study_progress(word_list, station) {
 	        var timescore = test_input_length/test_output_length;
 	        var input = self.input_text.trim();
 	        var lenscore = self.table.ditLength(input)/self.table.ditLength(self.current);
-            self.session.tscore += timescore;
-            self.session.lscore += lenscore;
-	        self.session.tests.push([self.current, timescore, lenscore]);
-            document.getElementById("scores").innerHTML += "word='"+self.current+"', tscore="+timescore+", lscore="+lenscore+"<br>";
+            var score = timescore * lenscore;
+            self.session.score += score;
+	        self.session.tests.push([self.current, score]);
+            document.getElementById("scores").innerHTML += "'"+self.current+"' = "+score.toFixed(2)+"("+(self.session.score/self.session.reps_done).toFixed(2)+"), ";
 	    },
 	    test_next : function() {
 	        // console.log("test_next");
@@ -164,42 +163,44 @@ function study_progress(word_list, station) {
             var n = self.session.tests.length;
             for (var i = 0; i < n; i += 1) {
                 var t = self.session.tests[i]
-                self.progress_score_word(t[0], t[1], t[2]);
+                self.progress_score_word(t[0], t[1]);
             }
             self.progress_progress();
+            document.getElementById("scores").innerHTML += "<br>session completed with overall score: "+(self.session.score/self.session.reps_done).toFixed(2);
         },
 	    session_start : function() {
 	        // console.log("start");
+            var next = self.word_list.next(self.items_per_session);
 	        self.session = {
                 reps_to_do : self.items_per_session * self.reps_per_item,
                 reps_done : 0,
-                tscore : 0,
-                lscore : 0,
-		        words : shuffle(repeat(self.reps_per_item, self.word_list.next(self.items_per_session))),
+                score : 0,
+		        words : shuffle(repeat(self.reps_per_item, next)),
 		        tests : []
 	        };
+            document.getElementById("scores").innerHTML = "<strong>start new session</strong><br>"+next+"<br>";
 	        self.session_continue();
-            document.getElementById("scores").innerHTML = "<strong>start new session</strong><br>";
 	    },
         worst : function(n) {
-            var worst = [];
-            for (var x in self.words) {
-                // console.log("worst.push("+x+")");
-                worst.push(x);
-            }
-            return worst;
+            var worst = Object.keys(self.words).sort(function(a,b) {
+                a = self.words[a];
+                b = self.words[b]
+                return (b.score-a.score) || (a.n-b.n);
+            });
+            // for (var i = 0; i < worst.length; i += 1) console.log(worst[i], self.words[worst[i]]);
+            return worst.slice(0,self.items_per_session);
         },
         session_review : function() {
+            var worst = self.worst(self.items_per_session);
             self.session =  {
                 reps_to_do : self.items_per_session * self.reps_per_item,
                 reps_done : 0,
-                tscore : 0,
-                lscore : 0,
-		        words : shuffle(repeat(self.reps_per_item, self.worst(self.items_per_session))),
+                score : 0,
+		        words : shuffle(repeat(self.reps_per_item, worst)),
 		        tests : []
             };
+            document.getElementById("scores").innerHTML = "<strong>start review session</strong><br>"+worst+"<br>";
             self.session_continue();
-            document.getElementById("scores").innerHTML = "<strong>start review session</strong><br>";
         },
 	    session_restart : function() {
 	        // console.log("restart");
@@ -215,16 +216,13 @@ function study_progress(word_list, station) {
         progress_progress : function() {
             progress_bar('training_progress', self.word_list.next_i, self.word_list.length);
         },
-        progress_score_word : function(word, tscore, lscore) {
+        progress_score_word : function(word, score) {
             var w = self.words[word];
             if ( ! w ) {
-                w = { n : 1, avg_tscore : tscore, avg_lscore : lscore, davg_tscore : tscore, davg_lscore : lscore }
+                w = { n : 1, score : score }
             } else {
                 w.n += 1;
-                w.avg_tscore = (w.avg_tscore * (w.n -1) + tscore) / w.n;
-                w.avg_lscore = (w.avg_lscore * (w.n -1) + lscore) / w.n;
-                w.davg_tscore = (w.davg_tscore + tscore) / 2;
-                w.davg_lscore = (w.davg_lscore + lscore) / 2;
+                w.score = (w.score + score) / 2;
             }
             self.words[word] = w;
         },
@@ -240,6 +238,9 @@ function study_progress(word_list, station) {
             };
             localStorage.setItem(save.word_list_name, JSON.stringify(save));
             // console.log('progress_save('+save.word_list_name+', '+localStorage[save.word_list_name]);
+        },
+        progress_delete : function() {
+            localStorage.removeItem(self.word_list.name);
         },
         //
 	    setSpeed : function(wpm) {
@@ -260,6 +261,7 @@ function study_progress(word_list, station) {
 	    onstart : function() { self.session_start(); },
 	    onreview : function() { self.session_review(); },
         onsave : function() { self.progress_save(); },
+        ondelete : function() { self.progress_delete(); },
 
 	    onslower : function() { self.slower(); },
 	    onfaster : function() { self.faster(); },
