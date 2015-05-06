@@ -51,24 +51,43 @@ function study_progress(word_list, station) {
     function pick(list) {
 	    return list[Math.floor(Math.random()*list.length)];
 	}
+    function shuffle(list) {
+        for (var n = list.length; n > 1; n -= 1) {
+            var i = Math.floor(Math.random()*n);
+            if (i != n-1) {
+                var t = list[i]; list[i] = list[n-1]; list[n-1] = t;
+            }
+        }
+        return list;
+    }
+    function repeat(n, list) {
+        var result = [];
+        for(var i = 0; i < n; i += 1)
+            result = result.concat(list);
+        return result;
+    }
     function progress_bar(id, val, max) {
         var p = document.getElementById(id);
         p.max = max;
         p.value = val;
         p.innerText = ""+val+"/"+max;
     }
-    var ITEMS_PER_SESSION = 5, REPS_PER_SESSION = 5;
+    var ITEMS_PER_SESSION = 5, REPS_PER_ITEM = 5;
 
     var self = {
 	    word_list : word_list,	// the word list we are studying
 	    station : station,      // the tester we use to examine the student
 	    table : station.output.table,
+        items_per_session : ITEMS_PER_SESSION,
+        reps_per_item : REPS_PER_ITEM,
 	    words : {},             // the dictionary of words studied
 		// number of times seen, recording percent correct,
 	    current : "",           // current word
 	    session : {             // current session, like words but for this session
-            reps_to_do : ITEMS_PER_SESSION*REPS_PER_SESSION,
+            reps_to_do : ITEMS_PER_SESSION*REPS_PER_ITEM,
             reps_done : 0,
+            tscore : 0,
+            lscore : 0,
 	        words : ["e", "t", "i", "ee", "a", "n", "s"],
 	        tests : []
 	    },
@@ -110,12 +129,16 @@ function study_progress(word_list, station) {
 	    },
 	    test_score : function() {
 	        self.session.reps_done += 1;
-            var test_output_length = self.table.ditLength(self.current)*self.msPerDit; // length of code to be sent
+            // length of code to be sent, with word space appended
+            var test_output_length = self.table.ditLength(self.current+' ')*self.msPerDit;
             var test_input_length = Math.max(Date.now() - (self.test_output_time+test_output_length), test_output_length);
 	        var timescore = test_input_length/test_output_length;
 	        var input = self.input_text.trim();
 	        var lenscore = self.table.ditLength(input)/self.table.ditLength(self.current);
+            self.session.tscore += timescore;
+            self.session.lscore += lenscore;
 	        self.session.tests.push([self.current, timescore, lenscore]);
+            document.getElementById("scores").innerHTML += "word='"+self.current+"', tscore="+timescore+", lscore="+lenscore+"<br>";
 	    },
 	    test_next : function() {
 	        // console.log("test_next");
@@ -134,7 +157,7 @@ function study_progress(word_list, station) {
 	    session_continue : function() {
 	        // console.log("continue");
             self.session_progress();
-	        self.current = pick(self.session.words);
+	        self.current = self.session.words[self.session.reps_done];
 	        self.test_word();
 	    },
         session_score : function() {
@@ -148,12 +171,15 @@ function study_progress(word_list, station) {
 	    session_start : function() {
 	        // console.log("start");
 	        self.session = {
-                reps_to_do : ITEMS_PER_SESSION * REPS_PER_SESSION,
+                reps_to_do : self.items_per_session * self.reps_per_item,
                 reps_done : 0,
-		        words : self.word_list.next(ITEMS_PER_SESSION),
+                tscore : 0,
+                lscore : 0,
+		        words : shuffle(repeat(self.reps_per_item, self.word_list.next(self.items_per_session))),
 		        tests : []
 	        };
 	        self.session_continue();
+            document.getElementById("scores").innerHTML = "<strong>start new session</strong><br>";
 	    },
         worst : function(n) {
             var worst = [];
@@ -165,12 +191,15 @@ function study_progress(word_list, station) {
         },
         session_review : function() {
             self.session =  {
-                reps_to_do : ITEMS_PER_SESSION * REPS_PER_SESSION,
+                reps_to_do : self.items_per_session * self.reps_per_item,
                 reps_done : 0,
-		        words : self.worst(ITEMS_PER_SESSION),
+                tscore : 0,
+                lscore : 0,
+		        words : shuffle(repeat(self.reps_per_item, self.worst(self.items_per_session))),
 		        tests : []
             };
             self.session_continue();
+            document.getElementById("scores").innerHTML = "<strong>start review session</strong><br>";
         },
 	    session_restart : function() {
 	        // console.log("restart");
@@ -201,6 +230,8 @@ function study_progress(word_list, station) {
         },
         progress_save : function() {
             var save = {
+                items_per_session : self.items_per_session,
+                reps_per_item : self.reps_per_item,
                 word_list_name : self.word_list.name,
                 word_list_next_i : self.word_list.next_i,
                 table_name : self.table.name,
@@ -220,6 +251,10 @@ function study_progress(word_list, station) {
 	    getSpeed : function() { return self.station.output.wpm },
 	    faster : function() { self.setSpeed(self.getSpeed()+2.5); },
 	    slower : function() { self.setSpeed(self.getSpeed()-2.5); },
+        swappaddles : function(swapped) { self.station.input.setSwapped(swapped); },
+        setItemsPerSession : function(n) { self.items_per_session = n; },
+        setRepsPerItem : function(n) { self.reps_per_item = n; },
+        //
 	    onagain : function() { self.test_again(); },
 	    onnext : function() { self.test_next(); },
 	    onstart : function() { self.session_start(); },
@@ -228,7 +263,7 @@ function study_progress(word_list, station) {
 
 	    onslower : function() { self.slower(); },
 	    onfaster : function() { self.faster(); },
-
+        onswappaddles : function(name) { self.swappaddles(document.getElementsByName(name)[0].checked); },
     };
 
     self.station.input_decoder.on('letter', function(ltr, code) { self.oninputletter(ltr, code); });
@@ -244,6 +279,8 @@ function study_progress_restore(name) {
     var word_list = word_list_by_name(save.word_list_name, table, save.word_list_next_i);
     var station = morse_code_station(save.station_params);
     var progress = study_progress(word_list, station);
+    progress.items_per_session = save.items_per_session;
+    progress.reps_per_item = save.reps_per_item;
     progress.words = save.words;
     return progress;
 }

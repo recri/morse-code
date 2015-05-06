@@ -24,15 +24,19 @@
             <div id="training_controls">
  	            <button onclick="progress.onnext()">Skip to Next</button>
 	            <button onclick="progress.onagain()">Repeat Again</button>
-	            <br/>
+	            <br>
 	            <button onclick="progress.onstart()">Start New</button>
                 <button onclick="progress.onreview()">Start Review</button>
                 <button onclick="progress.onsave()">Save Progress</button>
                 <button onclick="progress.ondelete()">Delete Progress</button>
-                <br/>
+                <br>
                 <button onclick="progress.onslower()">Slower</button>
                 <span id="speed">15</span>WPM
                 <button onclick="progress.onfaster()">Faster</button>
+                <br>
+	            <form id="input_swap" onchange="progress.swap_paddles('input_swap')">
+	                <input type="checkbox" name="input_swap" value="1">Swap Paddles</input>
+	            </form>
             </div>
             <div id="key_buttons"></div>
             <p>
@@ -43,6 +47,13 @@
 	            pressing the other will send a string of dahs,
 	            and pressing both will send a string of di-dahs or dah-dits.
             </p>
+            <h2>Controls</h2>
+            <div id="training">
+	            <div id="items_per_session"></div>
+	            <div id="reps_per_session"></div>
+            </div>
+            <div id="scores">
+            </div>
         </div>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.3.min.js"><\/script>')</script>
@@ -62,11 +73,11 @@
                   if (localStorage[query]) {
                     progress = study_progress_restore(query);
                     station = progress.station;
-                    station_ui = morse_code_ui(station);
+                    station_ui = morse_code_ui(station, progress);
                   } else {
                     station = morse_code_station();
-                    station_ui = morse_code_ui(station);
                     progress = study_progress(word_list_by_name(query, station.table), station);
+                    station_ui = morse_code_ui(station, progress);
 
                     station.input.setPitch(550);
                     station.input.setGain(0.05);
@@ -83,6 +94,8 @@
                     station.key_type_select('iambic');
                     station.input.setSwapped(true);
                   }
+
+                  station_ui.training_controls();
 
                   // make the speed consistent
                   progress.setSpeed(station.input.wpm);

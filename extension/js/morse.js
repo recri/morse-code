@@ -76,7 +76,7 @@ function morse_code_table(name) {
 	    // that terminates each dit or dah.
 	    encode: function(string) {
 	        var result = [];
-	        if (table.code) {
+	        if (string && table.code) {
 		        for (var i = 0; i < string.length; i += 1) {
 		            var c = string.charAt(i).toUpperCase();
 		            if (table.code[c]) {

@@ -17,7 +17,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 
-function morse_code_ui(station) {
+function morse_code_ui(station, progress) {
     function button_up(id) {
         var e = document.getElementById(id);
         var is_left = id.charAt(0) == 'l' ? 1 : 0;
@@ -141,8 +141,12 @@ function morse_code_ui(station) {
 	        slider("output_pitch", MIN_PITCH, MAX_PITCH, DEF_OUT_PITCH, "Hz", station.output.setPitch, "  Pitch  ");
 	        slider("output_gain", MIN_GAIN, MAX_GAIN, DEF_GAIN, "dB", station.output.setGain, "  Gain  ");
 	        slider("output_speed", MIN_SPEED, MAX_SPEED, DEF_SPEED, "WPM", station.output.setWPM, "  Speed  ");
-            slider("output_rise_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", station.output.setOnTime, "  Rise  ")
-            slider("output_fall_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", station.output.setOffTime, "  Fall  ")
+            slider("output_rise_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", station.output.setOnTime, "  Rise  ");
+            slider("output_fall_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", station.output.setOffTime, "  Fall  ");
+        },
+        training_controls : function() {
+            slider("items_per_session", 5, 20, 5, "items", progress.setItemsPerSession, "  Items/Session  ");
+            slider("reps_per_session", 1, 10, 5, "reps", progress.setRepsPerItem, "  Reps/Item  ");
         },
     };
     return self;

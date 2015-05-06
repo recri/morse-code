@@ -1,8 +1,10 @@
 * Items to be done here
 ** Overall
 *** [x] Adopt the html5boilerplate to cover all the issues I haven't discovered let alone solved
+*** [ ] Spell check the text
 ** UI
 *** [ ] Layout sliders so that the values are aligned on the right and the titles are aligned on the left
+*** [ ] Surprise, none of the UI code reflects programmatic values back into the UI, it's all one way.
 ** Output
 *** [ ] Slow down element encoding so the decoding will happen with the audio
 ** Input
@@ -17,6 +19,8 @@
 ** Trainer
 *** [ ] Determine new/review/mixed session structure
 *** [x] Flashy graphics for progress through session
+*** [ ] Need an end of session marker, since there is no next code
+*** [ ] Need more feedback per test
     html5 <progress value="10" max="100"></progress>
 *** [x] Flashy graphics for cumulative progress over sessions
 *** [x] Select training set
