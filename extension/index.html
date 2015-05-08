@@ -26,7 +26,7 @@
 	            This <a href="decoding.html">decoding</a> page will listen to morse code over your computer's microphone and decode it.
 	            <h2>Training</h2>
 	            The training game page will play morse code patterns for you to repeat back.  You can have the patterns chosen from the following categories:
-                <ul id="vocabularies"></ul>
+                <div id="vocabularies"></div>
 	            <h2>WebRTC</h2>
 	            This <a href="webrtc.html">WebRTC</a> page will allow you to practice morse code with other people over the internet.
             </div>
@@ -41,7 +41,7 @@
             ul.innerHTML = "";
             var dict = word_list_names();
             for (var i in dict) {
-              ul.innerHTML += '<li><a href="training.html?'+i+'">'+dict[i]+'</a></li>\n';
+              ul.innerHTML += '<a href="training.html?'+i+'">'+dict[i]+'</a><br>\n';
             }
         </script
   </body>
