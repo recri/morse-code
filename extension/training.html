@@ -34,7 +34,7 @@
                 <span id="speed">15</span>WPM
                 <button onclick="progress.onfaster()">Faster</button>
                 <br>
-	            <form id="input_swap" onchange="progress.swap_paddles('input_swap')">
+	            <form id="input_swap" onchange="progress.onswappaddles('input_swap')">
 	                <input type="checkbox" name="input_swap" value="1">Swap Paddles</input>
 	            </form>
             </div>
@@ -92,7 +92,7 @@
                     station.output.setOffTime(0.004);
 
                     station.key_type_select('iambic');
-                    station.input.setSwapped(true);
+                    station.input.setSwapped(false);
                   }
 
                   station_ui.training_controls();
