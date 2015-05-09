@@ -80,20 +80,20 @@
                     progress = study_progress(word_list_by_name(query, station.table), station);
                     station_ui = morse_code_ui(station, progress);
 
-                    station.input.setPitch(550);
-                    station.input.setGain(0.05);
-                    station.input.setWPM(SPEED);
-                    station.input.setOnTime(0.004);
-                    station.input.setOffTime(0.004);
+                    station.input.pitch = (550);
+                    station.input.gain = (0.05);
+                    station.input.wpm = (SPEED);
+                    station.input.rise = (0.004);
+                    station.input.fall = (0.004);
 
-                    station.output.setPitch(600);
-                    station.output.setGain(0.05);
-                    station.output.setWPM(SPEED);
-                    station.output.setOnTime(0.004);
-                    station.output.setOffTime(0.004);
+                    station.output.pitch = (600);
+                    station.output.gain = (0.05);
+                    station.output.wpm = (SPEED);
+                    station.output.rise = (0.004);
+                    station.output.fall = (0.004);
 
                     station.key_type_select('iambic');
-                    station.input.setSwapped(false);
+                    station.input.swapped = (false);
                   }
 
                   station_ui.training_controls();

@@ -26,6 +26,24 @@
 (function() {
     var root = this;
     var morse = {};
+
+    // our personal extender function for inheritance
+    function extend(obj, props) {
+        for (prop in props) {
+            if (obj[prop]) console.log("overwrite "+prop);
+            var tmp = Object.getOwnPropertyDescriptor(props, prop);
+            if (tmp.get && tmp.set) {
+                Object.defineProperty(obj, prop, { set : tmp.set, get : tmp.get });
+            } else if (tmp.set) {
+                Object.defineProperty(obj, prop, { set : tmp.set });
+            } else if (tmp.get) {
+                Object.defineProperty(obj, prop, { get : tmp.get });
+            } else {
+                obj[prop] = props[prop];
+            }
+        }
+        return obj;
+    }
     // translate text into dit/dah strings
     morse.table = function(name) {
         // object defining a morse code translation
@@ -237,22 +255,22 @@
 	         *  on: listen to events
 	         */
 	        on : function(type, func, ctx) {
-		        (self.events[type] = self.events[type] || []).push({f:func, c:ctx})
+		        (this.events[type] = this.events[type] || []).push({f:func, c:ctx})
 	        },
 	        /**
 	         *  Off: stop listening to event / specific callback
 	         */
 	        off : function(type, func) {
-		        type || (self.events = {})
-		        var list = self.events[type] || [],
+		        type || (this.events = {})
+		        var list = this.events[type] || [],
 		        i = list.length = func ? list.length : 0
 		        while(i-->0) func == list[i].f && list.splice(i,1)
 	        },
 	        /**
 	         * Emit: send event, callbacks will be triggered
 	         */
-	        emit : function(){
-		        var args = Array.apply([], arguments), list = self.events[args.shift()] || [], i=0, j;
+	        emit : function() {
+		        var args = Array.apply([], arguments), list = this.events[args.shift()] || [], i=0, j;
 		        while (j=list[i++]) j.f.apply(j.c, args)
 	        },
 	        events : {},
@@ -262,117 +280,117 @@
 
     // translate keyup/keydown into keyed sidetone
     morse.player = function(context) {
-        // extend event
-        var self = morse.event();
-        // add an oscillator
-        self.oscillator = context.createOscillator();
-        // and a keying envelope
-	    self.key = context.createGain();
-        // the pitch of the oscillator
-        Object.defineProperty(self, "pitch", {
-            set : function(hertz) { self.oscillator.frequency.value = hertz; },
-            get : function() { return self.oscillator.frequency.value; },
+        // extend morse.event
+        var self = extend(morse.event(), {
+            // add an oscillator
+            oscillator : context.createOscillator(),
+            // and a keying envelope
+	        key : context.createGain(),
+            // the pitch of the oscillator
+            set pitch(hertz) { this.oscillator.frequency.value = hertz; },
+            get pitch() { return this.oscillator.frequency.value; },
+            // the envelope
+            ramp : { rise : 0.004, fall : 0.004, max : 0.05 },
+            // the maximum gain of the envelope
+            set gain(gain) { this.ramp.max = Math.min(Math.max(gain, 0.001), 1.0); },
+            get gain() { return this.ramp.max; },
+            // the rise time of the envelope
+            set rise(seconds) { this.ramp.rise = seconds || 0.004; },
+            get rise() { return this.ramp.rise; },
+            // the fall time of the envelope
+            set fall(seconds) { this.ramp.fall = seconds || 0.004; },
+            get fall() { return this.ramp.fall; },
+            // where we are in the sample time stream
+            curpos : 0,
+            set cursor(seconds) { this.curpos = seconds; },
+            get cursor() { return this.curpos = Math.max(this.curpos, context.currentTime); },
+            // connect our output samples to somewhere
+	        connect : function(target) { this.key.connect(target); },
+            // turn the key on now
+	        keyOn : function() {
+	            this.cancel();
+	            this.keyOnAt(context.currentTime);
+	        },
+            // turn the key off now
+	        keyOff : function() {
+	            this.cancel();
+	            this.offAt(context.currentTime);
+	        },
+            // schedule the key on at time
+	        keyOnAt : function(time) {
+	            this.key.gain.setValueAtTime(0.0, time);
+	            this.key.gain.linearRampToValueAtTime(this.ramp.max, time+this.ramp.rise);
+	            this.cursor = time;
+	            this.emit('transition', 1, time);
+	        },
+            // schedule the key off at time
+	        keyOffAt : function(time) {
+	            this.key.gain.setValueAtTime(this.ramp.max, time);
+	            this.key.gain.linearRampToValueAtTime(0.0, time+this.ramp.fall);
+	            this.cursor = time;
+	            this.emit('transition', 0, time);
+	        },
+            // hold the last scheduled key state for seconds
+	        keyHoldFor : function(seconds) { return this.cursor += seconds; },
+            // cancel all scheduled key transitions
+	        cancel : function() {
+	            this.key.gain.cancelScheduledValues(this.cursor = context.currentTime);
+	            this.key.gain.value = 0;
+	        },
         });
-	    self.pitch = 600;
-        // the maximum gain of the envelope
-        Object.defineProperty(self, "gain", {
-            set : function(gain) { self.ramp_max = Math.min(Math.max(gain, 0.001), 1.0); }
-        });
+
+        // initialize parameters
+        self.pitch = 600;
 	    self.gain = 0.05;
-        // the rise time of the envelope
-        Object.defineProperty(self, "rise", {
-            set : function(seconds) { self.ramp_rise = seconds || 0.004; }
-        });
 	    self.rise = 0.004;
-        // the fall time of the envelope
-        Object.defineProperty(self, "fall", {
-            set : function(seconds) { self.ramp_fall = seconds || 0.004; }
-        });
 	    self.fall = 0.004;
-        // where we are in the sample time stream
-        Object.defineProperty(self, "cursor", {
-            set : function(seconds) { self.curpos = seconds; },
-            get : function() { return self.curpos = Math.max(self.curpos, context.currentTime); },
-        });
 	    self.cursor = 0;		// next time
-        // connect our output samples to somewhere
-	    self.connect = function(target) { self.key.connect(target); };
-        // turn the key on now
-	    self.keyOn = function() {
-	        self.cancel();
-	        self.keyOnAt(context.currentTime);
-	    };
-        // turn the key off now
-	    self.keyOff = function() {
-	        self.cancel();
-	        self.offAt(context.currentTime);
-	    };
-        // schedule the key on at time
-	    self.keyOnAt = function(time) {
-	        self.key.gain.setValueAtTime(0.0, time);
-	        self.key.gain.linearRampToValueAtTime(self.ramp_max, time+self.ramp_rise);
-	        self.cursor = time;
-	        self.emit('transition', 1, time);
-	    };
-        // schedule the key off at time
-	    self.keyOffAt = function(time) {
-	        self.key.gain.setValueAtTime(self.ramp_max, time);
-	        self.key.gain.linearRampToValueAtTime(0.0, time+self.ramp_fall);
-	        self.cursor = time;
-	        self.emit('transition', 0, time);
-	    };
-        // hold the last scheduled key state for seconds
-	    self.keyHoldFor = function(seconds) { return self.cursor += seconds; };
-        // cancel all scheduled key transitions
-	    self.cancel = function() {
-	        self.key.gain.cancelScheduledValues(self.cursor = context.currentTime);
-	        self.key.gain.value = 0;
-	    };
-        // initialize the oscillator
-        self.oscillator.type = 'sine';
-        self.oscillator.start();
+
         // initialize the gain
         self.key.gain.value = 0;
         self.oscillator.connect(self.key);
+
+        // initialize the oscillator
+        self.oscillator.type = 'sine';
+        self.oscillator.start();
+
         return self;
     };
 
     // translate text into keyed sidetone
+    // extends the oscillator with a code table and timings for the elements of the code
     morse.output = function(context) {
-        var self = morse.player(context);
-	    self.table = morse.table();
-        Object.defineProperty(self, "wpm", {
-            set : function(wpm) {
-                wpm = Math.max(5, Math.min(100, wpm));
-                self.dit = 60.0 / (wpm * 50);
-            },
-            get : function() { return 60 / (self.dit * 50); }
+        // extends player
+        var self = extend(morse.player(context), {
+	        table : morse.table(),
+            set wpm(wpm) { this.dit = 60.0 / (Math.max(5, Math.min(100, wpm)) * 50); },
+            get wpm() { return 60 / (this.dit * 50); },
+	        dah : 3,		// dah length in dits
+	        ies : 1,		// interelement space in dits
+	        ils : 3,		// interletter space in dits
+	        iws : 7,		// interword space in dits
+	        send : function(string) {
+	            var code = this.table.encode(string);
+	            var time = this.cursor;
+	            for (var i = 0; i < code.length; i += 1) {
+		            var c = code.charAt(i);
+		            if (c == '.' || c == '-') {
+		                this.keyOnAt(time);
+		                time = this.keyHoldFor((c == '.' ? 1 : this.dah) * this.dit);
+		                this.keyOffAt(time);
+		                time = this.keyHoldFor(this.ies * this.dit);
+		            } else if (c == ' ') {
+		                if (i+2 < code.length && code.charAt(i+1) == ' ' && code.charAt(i+2) == ' ') {
+			                time = this.keyHoldFor((this.iws-this.ies) * this.dit);
+			                i += 2;
+		                } else {
+			                time = this.keyHoldFor((this.ils-this.ies) * this.dit);
+		                }
+		            }
+	            }
+	        },
         });
 	    self.wpm = 20;		// words per minute
-	    self.dah = 3;		// dah length in dits
-	    self.ies = 1;		// interelement space in dits
-	    self.ils = 3;		// interletter space in dits
-	    self.iws = 7.		// interword space in dits
-	    self.send = function(string) {
-	        var code = self.table.encode(string);
-	        var time = self.cursor;
-	        for (var i = 0; i < code.length; i += 1) {
-		        var c = code.charAt(i);
-		        if (c == '.' || c == '-') {
-		            self.keyOnAt(time);
-		            time = self.keyHoldFor((c == '.' ? 1 : self.dah) * self.dit);
-		            self.keyOffAt(time);
-		            time = self.keyHoldFor(self.ies * self.dit);
-		        } else if (c == ' ') {
-		            if (i+2 < code.length && code.charAt(i+1) == ' ' && code.charAt(i+2) == ' ') {
-			            time = self.keyHoldFor((self.iws-self.ies) * self.dit);
-			            i += 2;
-		            } else {
-			            time = self.keyHoldFor((self.ils-self.ies) * self.dit);
-		            }
-		        }
-	        }
-	    };
         return self;
     };
 
@@ -389,7 +407,8 @@
         ** and the video presentation of CW mode for the NUE-PSK modem
         ** at TAPR DCC 2011 by George Heron N2APB and Dave Collins AD7JT.
         */
-        var self = {
+        // extends event
+        var self = extend(morse.event(), {
 	        scriptNode : context.createScriptProcessor(1024, 1, 1),
 	        center : 600,
 	        bandwidth : 100,
@@ -400,26 +419,26 @@
 	        power : 0,
 	        setCenterAndBandwidth : function(center, bandwidth) {
 	            if (center > 0 && center > context.sampleRate/4) {
-		            self.center = center;
+		            this.center = center;
 	            } else {
-		            self.center = 600;
+		            this.center = 600;
 	            }
 	            if (bandwidth > 0 && bandwidth > context.sampleRate/4) {
-		            self.bandwidth = bandwidth;
+		            this.bandwidth = bandwidth;
 	            } else {
-		            self.bandwidth = 50;
+		            this.bandwidth = 50;
 	            }
-	            self.coeff = 2 * Math.cos(2*Math.PI*self.center/context.sampleRate);
-	            self.block_size = context.sampleRate / self.bandwidth;
-	            self.i = self.block_size;
-	            self.s[0] = self.s[1] = self.s[3] = self.s[4] = 0;
+	            this.coeff = 2 * Math.cos(2*Math.PI*this.center/context.sampleRate);
+	            this.block_size = context.sampleRate / this.bandwidth;
+	            this.i = this.block_size;
+	            this.s[0] = this.s[1] = this.s[3] = this.s[4] = 0;
 	        },
-	        detone_process : function(x) {
-	            self.s[self.i&3] = x + self.coeff * self.s[(self.i+1)&3] - self.s[(self.i+2)&3];
-	            if (--self.i < 0) {
-		            self.power = self.s[1]*self.s[1] + self.s[0]*self.s[0] - self.coeff*self.s[0]*self.s[1];
-		            self.i = self.block_size;
-		            self.s[0] = self.s[1] = self.s[2] = self.s[3] = 0.0;
+            detone_process : function(x) {
+	            this.s[this.i&3] = x + this.coeff * this.s[(this.i+1)&3] - this.s[(this.i+2)&3];
+	            if (--this.i < 0) {
+		            this.power = this.s[1]*this.s[1] + this.s[0]*this.s[0] - this.coeff*this.s[0]*this.s[1];
+		            this.i = this.block_size;
+		            this.s[0] = this.s[1] = this.s[2] = this.s[3] = 0.0;
 		            return 1;
 	            } else {
 		            return 0;
@@ -435,39 +454,27 @@
 	            var inputData = inputBuffer.getChannelData(0);
 	            var outputData = outputBuffer.getChannelData(0);
 	            var time = audioProcessingEvent.playbackTime;
+                // console.log("onAudioProcess "+inputBuffer.length+" samples at "+time);
 	            for (var sample = 0; sample < inputBuffer.length; sample++) {
 		            outputData[sample] = inputData[sample];
-		            if (self.detone_process(inputData[sample])) {
-		                self.maxPower = Math.max(self.power, self.maxPower);
-		                if (self.onoff == 0 && self.oldPower < 0.6*self.maxPower && self.power > 0.6*self.maxPower)
-			                self.emit('transition', self.onoff = 1, time);
-		                if (self.onoff == 1 && self.oldPower > 0.4*self.maxPower && self.power < 0.4*self.maxPower)
-			                self.emit('transition', self.onoff = 0, time);
+		            if (this.detone_process(inputData[sample])) {
+		                this.maxPower = Math.max(this.power, this.maxPower);
+		                if (this.onoff == 0 && this.oldPower < 0.6*this.maxPower && this.power > 0.6*this.maxPower)
+			                this.emit('transition', this.onoff = 1, time);
+		                if (this.onoff == 1 && this.oldPower > 0.4*this.maxPower && this.power < 0.4*this.maxPower)
+			                this.emit('transition', this.onoff = 0, time);
 		            }
-		            self.oldPower = self.power;
-		            time += self.dtime;
+		            this.oldPower = this.power;
+		            time += this.dtime;
 	            }
 	        },
-	        connect : function(node) { self.scriptNode.connect(node) },
-	        getTarget : function() { return self.scriptNode; },
-	        // event handling
-	        events : {},
-	        on : function(type, func, ctx) {
-	            (self.events[type] = self.events[type] || []).push({f:func, c:ctx})
-	        },
-	        off : function(type, func) {
-	            type || (self.events = {})
-	            var list = self.events[type] || [],
-	            i = list.length = func ? list.length : 0
-	            while(i-->0) func == list[i].f && list.splice(i,1)
-	        },
-	        emit : function(){
-	            var args = Array.apply([], arguments), list = self.events[args.shift()] || [], i=0, j;
-	            while (j=list[i++]) j.f.apply(j.c, args);
-	        },
-        };
+	        connect : function(node) { this.scriptNode.connect(node) },
+	        get target() { return this.scriptNode; },
+        });
+        // setup
         self.dtime = 1.0 / context.sampleRate;
-        self.scriptNode.onaudioprocess = self.onAudioProcess;
+        self.scriptNode.onaudioprocess = function(audioProcessingEvent) { self.onAudioProcess(audioProcessingEvent); };
+        // go
         return self;
     }
 
@@ -479,10 +486,10 @@
         ** and start translating the marks and spaces into
         ** dits, dahs, inter-symbol spaces, and inter-word spaces
         */
-        var self = {
+        var self = extend(morse.detone(context), {
 	        wpm : 0,		/* float words per minute */
 	        word : 50,		/* float dits per word */
-	        estimate : 0,		/* float estimated dot clock period */
+	        estimate : 0,   /* float estimated dot clock period */
 	        time : 0,		/* float time of last event */
 	        n_dit : 1,		/* unsigned number of dits estimated */
 	        n_dah : 1,		/* unsigned number of dahs estimated */
@@ -491,9 +498,9 @@
 	        n_iws : 1,		/* unsigned number of inter-word spaces estimated */
 
 	        configure : function(wpm, word) {
-	            self.wpm = wpm > 0 ? wpm : 15;
-	            self.word = 50;
-	            self.estimate = (context.sampleRate * 60) / (self.wpm * self.word);
+	            this.wpm = wpm > 0 ? wpm : 15;
+	            this.word = 50;
+	            this.estimate = (context.sampleRate * 60) / (this.wpm * this.word);
 	        },
 
 	        /*
@@ -513,91 +520,80 @@
 	        */
 	        detime_process : function(onoff, time) {
 	            time *= context.sampleRate;			/* convert seconds to frames */
-	            var observation = time - self.time;	/* float length of observed element or space */
-	            self.time = time;
+	            var observation = time - this.time;	/* float length of observed element or space */
+	            this.time = time;
 	            if (onoff == 0) {				/* the end of a dit or a dah */
 		            var o_dit = observation;		/* float if it's a dit, then the length is the dit clock observation */
 		            var o_dah = observation / 3;		/* float if it's a dah, then the length/3 is the dit clock observation */
-		            var d_dit = o_dit - self.estimate;	/* float the dit distance from the current estimate */
-		            var d_dah = o_dah - self.estimate;	/* float the dah distance from the current estimate */
+		            var d_dit = o_dit - this.estimate;	/* float the dit distance from the current estimate */
+		            var d_dah = o_dah - this.estimate;	/* float the dah distance from the current estimate */
 		            if (d_dit == 0 || d_dah == 0) {
 		                /* one of the observations is spot on, so 1/(d*d) will be infinite and the estimate is unchanged */
 		            } else {
 		                /* the weight of an observation is the observed frequency of the element scaled by inverse of
 		                 * distance from our current estimate normalized to one over the observations made.
 		                 */
-		                var w_dit = 1.0 * self.n_dit / (d_dit*d_dit); /* raw weight of dit observation */
-		                var w_dah = 1.0 * self.n_dah / (d_dah*d_dah); /* raw weight of dah observation */
+		                var w_dit = 1.0 * this.n_dit / (d_dit*d_dit); /* raw weight of dit observation */
+		                var w_dah = 1.0 * this.n_dah / (d_dah*d_dah); /* raw weight of dah observation */
 		                var wt = w_dit + w_dah;			     /* weight normalization */
 		                var update = (o_dit * w_dit + o_dah * w_dah) / wt;
 		                //console.log("o_dit="+o_dit+", w_dit="+w_dit+", o_dah="+o_dah+", w_dah="+w_dah+", wt="+wt);
-		                //console.log("update="+update+", estimate="+self.estimate);
-		                self.estimate += update;
-		                self.estimate /= 2;
-		                self.wpm = (context.sampleRate * 60) / (self.estimage * self.word);
+		                //console.log("update="+update+", estimate="+this.estimate);
+		                this.estimate += update;
+		                this.estimate /= 2;
+		                this.wpm = (context.sampleRate * 60) / (this.estimage * this.word);
 		            }
-		            var guess = 100 * observation / self.estimate;    /* make a guess */
+		            var guess = 100 * observation / this.estimate;    /* make a guess */
 		            if (guess < 200) {
-		                self.n_dit += 1; return '.';
+		                this.n_dit += 1; return '.';
 		            } else {
-		                self.n_dah += 1; return '-';
+		                this.n_dah += 1; return '-';
 		            }
 	            } else {					/* the end of an inter-element, inter-letter, or a longer space */
 		            var o_ies = observation;
 		            var o_ils = observation / 3;
-		            var d_ies = o_ies - self.estimate;
-		            var d_ils = o_ils - self.estimate;
-		            var guess = 100 * observation / self.estimate;
+		            var d_ies = o_ies - this.estimate;
+		            var d_ils = o_ils - this.estimate;
+		            var guess = 100 * observation / this.estimate;
 		            if (d_ies == 0 || d_ils == 0) {
 		                /* if one of the observations is spot on, then 1/(d*d) will be infinite and the estimate is unchanged */
 		            } else if (guess > 500) {
 		                /* if it looks like a word space, it could be any length, don't worry about how long it is */
 		            } else {
-		                var w_ies = 1.0 * self.n_ies / (d_ies*d_ies);
-		                var w_ils = 1.0 * self.n_ils / (d_ils*d_ils);
+		                var w_ies = 1.0 * this.n_ies / (d_ies*d_ies);
+		                var w_ils = 1.0 * this.n_ils / (d_ils*d_ils);
 		                var wt = w_ies + w_ils;
 		                var update = (o_ies * w_ies + o_ils * w_ils) / wt;
 		                //console.log("o_ies="+o_ies+", w_ies="+w_ies+", o_ils="+o_ils+", w_ils="+w_ils+", wt="+wt);
-		                //console.log("update="+update+", estimate="+self.estimate);
-		                self.estimate += update;
-		                self.estimate /= 2;
-		                self.wpm = (context.sampleRate * 60) / (self.estimage * self.word);
-		                guess = 100 * observation / self.estimate;
+		                //console.log("update="+update+", estimate="+this.estimate);
+		                this.estimate += update;
+		                this.estimate /= 2;
+		                this.wpm = (context.sampleRate * 60) / (this.estimage * this.word);
+		                guess = 100 * observation / this.estimate;
 		            }
 		            if (guess < 200) {
-		                self.n_ies += 1; return '';
+		                this.n_ies += 1; return '';
 		            } else if (guess < 500) {
-		                self.n_ils += 1; return ' ';
+		                this.n_ils += 1; return ' ';
 		            } else {
-		                self.n_iws += 1; return '\t';
+		                this.n_iws += 1; return '\t';
 		            }
 	            }
 	        },
 	        // event handler
-	        ontransition : function(onoff, time) { self.emit('element', self.detime_process(onoff, time), time); },
-	        // event management
-	        events : {},
-	        on : function(type, func, ctx) {
-	            (self.events[type] = self.events[type] || []).push({f:func, c:ctx})
-	        },
-	        off : function(type, func) {
-	            type || (self.events = {})
-	            var list = self.events[type] || [],
-	            i = list.length = func ? list.length : 0
-	            while(i-->0) func == list[i].f && list.splice(i,1)
-	        },
-	        emit : function(){
-	            var args = Array.apply([], arguments), list = self.events[args.shift()] || [], i=0, j;
-	            while (j=list[i++]) j.f.apply(j.c, args);
-	        },
-        }
+	        ontransition : function(onoff, time) {
+                // console.log('ontransition('+onoff+", "+time+") in "+this);
+                this.emit('element', this.detime_process(onoff, time), time);
+            },
+        });
+        self.on('transition', self.ontransition, self);
         self.configure(15, 50);	// this is part suggestion (15 wpm) and part routine (50 dits/word is PARIS)
         return self;
     }
 
     // translate dit dah strings to text
     morse.decode = function(context) {
-        var self = {
+        var self = extend(morse.detime(context), {
 	        table : null,
 	        elements : [],
 	        elementTimeout : null,
@@ -610,43 +606,29 @@
 	            }
 	        },
 	        onelement : function(elt, timeEnded) {
-	            if (self.elementTimeout) {
-		            clearTimeout(self.elementTimeout);
-		            self.elementTimeout = null;
+	            if (this.elementTimeout) {
+		            clearTimeout(this.elementTimeout);
+		            this.elementTimeout = null;
 	            }
 	            if (elt == '') {
 		            return;
 	            }
 	            if (elt == '.' || elt == '-') {
-		            self.elements.push(elt);
-		            self.elementTimeout = setTimeout(self.elementTimeoutFun, 1000*(timeEnded-context.currentTime)+250)
+		            this.elements.push(elt);
+		            this.elementTimeout = setTimeout(this.elementTimeoutFun, 1000*(timeEnded-context.currentTime)+250)
 		            return;
 	            }
-	            if (self.elements.length > 0) {
-		            var code = self.elements.join('');
-		            self.emit('letter', self.table.decode(code)  || '\u25a1', code);
-		            self.elements = [];
+	            if (this.elements.length > 0) {
+		            var code = this.elements.join('');
+		            this.emit('letter', this.table.decode(code)  || '\u25a1', code);
+		            this.elements = [];
 	            }
 	            if (elt == '\t') {
-		            self.emit('letter', ' ', elt);
+		            this.emit('letter', ' ', elt);
 	            }
 	        },
-	        // event handling
-	        events : {},
-	        on : function(type, func, ctx) {
-	            (self.events[type] = self.events[type] || []).push({f:func, c:ctx})
-	        },
-	        off : function(type, func) {
-	            type || (self.events = {})
-	            var list = self.events[type] || [],
-	            i = list.length = func ? list.length : 0
-	            while(i-->0) func == list[i].f && list.splice(i,1)
-	        },
-	        emit : function(){
-	            var args = Array.apply([], arguments), list = self.events[args.shift()] || [], i=0, j;
-	            while (j=list[i++]) j.f.apply(j.c, args);
-	        },
-        };
+        });
+        self.on('element', self.onelement, self);
         return self;
     }
 
@@ -722,83 +704,75 @@
         }
 
         // extends player
-        var self = morse.player(context);
+        var self = extend(morse.player(context), {
 
-        function transition(state, len) {
-	        // mark the new state
-	        keyer_state = state;
-	        // reset the timer
-	        if (timer < 0) timer = 0;
-	        timer += len+_perIes;
-	        // sound the element
-	        var time = self.cursor;
-	        self.keyOnAt(time);
-	        self.keyOffAt(time+len);
-	        self.keyHoldFor(_perIes);
-        }
+            transition : function(state, len) {
+	            // mark the new state
+	            keyer_state = state;
+	            // reset the timer
+	            if (timer < 0) timer = 0;
+	            timer += len+_perIes;
+	            // sound the element
+	            var time = this.cursor;
+	            this.keyOnAt(time);
+	            this.keyOffAt(time+len);
+	            this.keyHoldFor(_perIes);
+            },
 
-        function make_dit() { transition(DIT, _perDit); }
-        function make_dah() { transition(DAH, _perDah); }
+            make_dit : function() { this.transition(DIT, _perDit); },
+            make_dah : function() { this.transition(DAH, _perDah); },
 
-	    self.clock = function(raw_dit_on, raw_dah_on, ticks) {
-	        var dit_on = _swapped ? raw_dah_on : raw_dit_on;
-	        var dah_on = _swapped ? raw_dit_on : raw_dah_on;
+	        clock : function(raw_dit_on, raw_dah_on, ticks) {
+	            var dit_on = _swapped ? raw_dah_on : raw_dit_on;
+	            var dah_on = _swapped ? raw_dit_on : raw_dah_on;
 
-	        // update timer
-	        timer -= ticks;
+	            // update timer
+	            timer -= ticks;
 
-	        // keyer state machine
-	        if (keyer_state == IDLE) {
-		        if (dit_on) make_dit();
-		        else if (dah_on) make_dah();
-	        } else if ( timer <= _perIes/2 ) {
-		        if (keyer_state == DIT) {
-		            if ( dah_pending || dah_on ) make_dah();
-		            else if (dit_on) make_dit();
-		            else keyer_state = IDLE;
-		        } else if (keyer_state == DAH) {
-		            if ( dit_pending || dit_on ) make_dit();
-		            else if (dah_on) make_dah();
-		            else keyer_state = IDLE;
-		        }
-	        }
+	            // keyer state machine
+	            if (keyer_state == IDLE) {
+		            if (dit_on) self.make_dit();
+		            else if (dah_on) self.make_dah();
+	            } else if ( timer <= _perIes/2 ) {
+		            if (keyer_state == DIT) {
+		                if ( dah_pending || dah_on ) self.make_dah();
+		                else if (dit_on) self.make_dit();
+		                else keyer_state = IDLE;
+		            } else if (keyer_state == DAH) {
+		                if ( dit_pending || dit_on ) self.make_dit();
+		                else if (dah_on) self.make_dah();
+		                else keyer_state = IDLE;
+		            }
+	            }
 
-	        //*****************  dit pending state machine   *********************
-	        dit_pending = dit_pending ?
-		        keyer_state != DIT :
-		        (dit_on && keyer_state == DAH && timer < _perDah/3+_perIes);
+	            //*****************  dit pending state machine   *********************
+	            dit_pending = dit_pending ?
+		            keyer_state != DIT :
+		            (dit_on && keyer_state == DAH && timer < _perDah/3+_perIes);
 
-	        //******************  dah pending state machine   *********************
-	        dah_pending = dah_pending ?
-		        keyer_state != DAH :
-		        (dah_on && keyer_state == DIT && timer < _perDit/2+_perIes);
+	            //******************  dah pending state machine   *********************
+	            dah_pending = dah_pending ?
+		            keyer_state != DAH :
+		            (dah_on && keyer_state == DIT && timer < _perDit/2+_perIes);
 
-	    };
+	        },
 
-	    // swap the dit and dah paddles
-        Object.defineProperty(self, "swapped", {
-            set : function(swapped) { _swapped = swapped; },
-	        get : function() { return _swapped; }
-        });
+	        // swap the dit and dah paddles
+            set swapped(swapped) { _swapped = swapped; },
+            get swapped() { return _swapped; },
 
 	    // set the words per minute generated
-        Object.defineProperty(self, "wpm", {
-	        set : function(wpm) { _wpm = wpm; update(); },
-	        get : function() { return _wpm; }
-        });
+	        set wpm(wpm) { _wpm = wpm; update(); },
+	        get wpm() { return _wpm; },
 
 	    // set the dah length in dits
-        Object.defineProperty(self, "dah", {
-	        set : function(dahLen) { _dahLen = dahLen; update(); },
-	        get : function() { return _dahLen; }
-        });
+	        set dah(dahLen) { _dahLen = dahLen; update(); },
+	        get dah() { return _dahLen; },
 
 	    // set the inter-element length in dits
-        Object.defineProperty(self, "ies", {
-	        set : function (iesLen) { _iesLen = iesLen; update(); },
-            get : function() { return _iesLen; }
+	        set ies(iesLen) { _iesLen = iesLen; update(); },
+            get ies() { return _iesLen; },
         });
-
         //
         update();
         return self;
@@ -806,91 +780,87 @@
 
     morse.straight_input = function(context) {
         // extends player
-        var self = morse.player(context);
-	    self.raw_key_on = false;
-	    self.isOn = false;
-	    self.keyOn = function() {
-	        self.raw_key_on = true;
-	        if ( ! self.isOn) {
-		        self.keyOnAt(self.cursor);
-		        self.isOn = true;
-	        }
-	    };
-	    self.keyOff = function() {
-	        self.raw_key_on = false;
-	        if (self.isOn) {
-		        self.keyOffAt(self.cursor);
-		        self.isOn = false;
-	        }
-	    };
-        //
-        self.keydown = function(key) { self.keyOn(); };
-        self.keyup = function(key) { self.keyOff(); };
-        //
-	    self.onfocus = function() { };
-	    self.onblur = function() { self.keyOff(); };
-	    // handlers for MIDI
-	    self.onmidievent = function(event) {
-	        if (event.data.length == 3) {
-		        // console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
-		        switch (event.data[0]&0xF0) {
-		        case 0x90: self.keyon(); break;
-		        case 0x80: self.keyOff(); break;
-		        }
-	        }
-	    };
+        var self = extend(morse.player(context), {
+	        raw_key_on : false,
+	        is_on : false,
+            keyset : function(key, on) {
+	            this.raw_on = on;
+                if (this.raw_on != this.is_on) {
+                    this.is_on = this.raw_on;
+                    if (this.is_on) this.keyOnAt(this.cursor); else this.keyOffAt(this.cursor);
+	                this.intervalFunction();
+                }
+            },
+            //
+            keydown : function(key) { this.keyset(key, true); },
+            keyup : function(key) { self.keyset(key, false); },
+            //
+	        onfocus : function() { },
+	        onblur : function() { self.keyset(0, false); },
+	        // handlers for MIDI
+	        onmidievent : function(event) {
+	            if (event.data.length == 3) {
+		            // console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
+		            switch (event.data[0]&0xF0) {
+		            case 0x90: self.keyset(0, true); break;
+		            case 0x80: self.keyset(0, false); break;
+		            }
+	            }
+	        },
+        });
         return self;
     }
 
     morse.iambic_input = function(context) {
         // extend iambic keyer
-        var self = morse.iambic_keyer(context);
-	    self.raw_dit_on = false;
-	    self.raw_dah_on = false;
-	    // handlers for focus
-	    self.onfocus = function() { self.start(); };
-	    self.onblur = function() { self.stop(); };
-	    // handlers for MIDI
-	    self.onmidievent = function(event) {
-	        if (event.data.length == 3) {
-		        // console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
-		        switch (event.data[0]&0xF0) {
-		        case 0x90: self.key(event.data[1]&1, true); break;
-		        case 0x80: self.key(event.data[1]&1, false); break;
-		        }
-	        }
-	    };
-	    // common handlers
-        self.key = function(key, on) {
-	        if (key) self.raw_dit_on = on; else self.raw_dah_on = on;
-	        self.intervalFunction();
-        };
-	    self.keydown = function(key) { self.key(key, true); };
-	    self.keyup = function(key) { self.key(key, false); };
-	    self.intervalLast = context.currentTime;
-	    self.intervalFunction = function() {
-	        var time = context.currentTime;
-	        var tick = time - self.intervalLast;
-	        self.intervalLength = (self.intervalLength + tick) / 2;
-	        self.intervalLast = time;
-	        self.clock(self.raw_dit_on, self.raw_dah_on, tick);
-	    };
-	    self.interval = null;
-	    self.start = function() {
-	        if (self.interval) {
-		        self.stop();
-	        }
-	        self.interval = setInterval(self.intervalFunction, 1);
-	    };
-	    self.stop = function() {
-	        if (self.interval) {
-		        clearInterval(self.interval);
-		        self.interval = null;
-	        }
-	        self.raw_dit_on = false;
-	        self.raw_dah_on = false;
-	        self.cancel();
-	    };
+        var self = extend(morse.iambic_keyer(context), {
+	        raw_dit_on : false,
+	        raw_dah_on : false,
+	        // handlers for focus
+	        onfocus : function() { self.start(); },
+	        onblur : function() { self.stop(); },
+	        // handlers for MIDI
+	        onmidievent : function(event) {
+	            if (event.data.length == 3) {
+		            // console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
+		            switch (event.data[0]&0xF0) {
+		            case 0x90: self.keyset(event.data[1]&1, true); break;
+		            case 0x80: self.keyset(event.data[1]&1, false); break;
+		            }
+	            }
+	        },
+	        // common handlers
+            keyset : function(key, on) {
+	            if (key) this.raw_dit_on = on; else this.raw_dah_on = on;
+	            this.intervalFunction();
+            },
+	        keydown : function(key) { self.keyset(key, true); },
+	        keyup : function(key) { self.keyset(key, false); },
+	        intervalLast : context.currentTime,
+	        intervalFunction : function() {
+	            var time = context.currentTime;
+	            var tick = time - self.intervalLast;
+	            self.intervalLength = (self.intervalLength + tick) / 2;
+	            self.intervalLast = time;
+	            self.clock(self.raw_dit_on, self.raw_dah_on, tick);
+	        },
+	        interval : null,
+	        start : function() {
+	            if (this.interval) {
+		            this.stop();
+	            }
+	            this.interval = setInterval(this.intervalFunction, 1);
+	        },
+	        stop : function() {
+	            if (this.interval) {
+		            clearInterval(this.interval);
+		            this.interval = null;
+	            }
+	            this.raw_dit_on = false;
+	            this.raw_dah_on = false;
+	            this.cancel();
+	        },
+        });
         return self;
     }
 
@@ -919,21 +889,21 @@
 	        },
 	        onMIDISuccess : function( midiAccess ) {
 	            // console.log( "MIDI ready!" );
-	            self.midi = midiAccess;
+	            this.midi = midiAccess;
 	        },
 	        onMIDIFailure : function(msg) {
 	            // console.log( "Failed to get MIDI access - " + msg );
 	        },
 	        names : function() {
 	            var names = [];
-	            if (self.midi)
-		            for (var x of self.midi.inputs.values())
+	            if (this.midi)
+		            for (var x of this.midi.inputs.values())
 		                names.push(x.name);
 	            return names;
 	        },
 	        connect : function(name, handler) {
-	            if (self.midi) {
-		            for (var x of self.midi.inputs.values()) {
+	            if (this.midi) {
+		            for (var x of this.midi.inputs.values()) {
 		                if (x.name == name) {
 			                x.onmidimessage = handler;
 			                // console.log("installing handler for "+name);
@@ -942,8 +912,8 @@
 	            }
 	        },
 	        disconnect : function(name) {
-	            if (self.midi) {
-		            for (var x of self.midi.inputs.values()) {
+	            if (this.midi) {
+		            for (var x of this.midi.inputs.values()) {
 		                if (x.name == name) {
 			                // console.log("uninstalling handler for "+name);
 			                x.onmidimessage = null;
@@ -965,37 +935,37 @@
         var self = {
 	        straight : morse.straight_input(context),
 	        iambic : morse.iambic_input(context),
-            get pitch() { return self.iambic.pitch; },
+            get pitch() { return this.iambic.pitch; },
             set pitch(hertz) {
-	            self.straight.pitch = hertz;
-	            self.iambic.pitch = hertz;
+	            this.straight.pitch = hertz;
+	            this.iambic.pitch = hertz;
 	        },
-            get gain() { return self.iambic.gain; },
+            get gain() { return this.iambic.gain; },
 	        set gain(gain) {
-	            self.straight.gain = gain;
-	            self.iambic.gain = gain;
+	            this.straight.gain = gain;
+	            this.iambic.gain = gain;
 	        },
-            get rise() { return self.iambic.rise; },
+            get rise() { return this.iambic.rise; },
 	        set rise(seconds) {
-	            self.straight.rise = seconds;
-	            self.iambic.rise = seconds;
+	            this.straight.rise = seconds;
+	            this.iambic.rise = seconds;
 	        },
-            get fall() { return self.iambic.fall; },
+            get fall() { return this.iambic.fall; },
 	        set fall(seconds) {
-	            self.straight.fall = seconds;
-	            self.iambic.fall = seconds;
+	            this.straight.fall = seconds;
+	            this.iambic.fall = seconds;
 	        },
-            get wpm() { return self.iambic.wpm; },
-	        set wpm(wpm) { self.iambic.wpm = wpm; },
-            get dah() { return self.iambic.dah; },
-	        set dah(dah) { self.iambic.dah = (dah); },
-            get ies() { return self.iambic.ies; },
-	        set ies(ies) { self.iambic.ies = (ies); },
-            get swapped() { return self.iambic.swapped; },
-	        set swapped(swapped) { self.iambic.swapped = (swapped); },
+            get wpm() { return this.iambic.wpm; },
+	        set wpm(wpm) { this.iambic.wpm = wpm; },
+            get dah() { return this.iambic.dah; },
+	        set dah(dah) { this.iambic.dah = (dah); },
+            get ies() { return this.iambic.ies; },
+	        set ies(ies) { this.iambic.ies = (ies); },
+            get swapped() { return this.iambic.swapped; },
+	        set swapped(swapped) { this.iambic.swapped = (swapped); },
 	        connect : function(target) {
-	            self.straight.connect(target);
-	            self.iambic.connect(target);
+	            this.straight.connect(target);
+	            this.iambic.connect(target);
 	        },
         };
         return self;
@@ -1006,81 +976,75 @@
         var context = new (window.AudioContext || window.webkitAudioContext)();
 
         var self = {
+            context : context,
 	        key_type : null,
 	        key_type_select : function(key_type) {
-                if (self.key_type && self.input[self.key_type] && self.input[self.key_type].onblur)
-                    self.input[self.key_type].onblur();
-	            self.key_type = key_type;
-	            self.input.onfocus=self.input[key_type].onfocus;
-	            self.input.onblur=self.input[key_type].onblur;
-	            self.input.onmidievent=self.input[key_type].onmidievent;
-	            self.input.keydown=self.input[key_type].keydown;
-	            self.input.keyup=self.input[key_type].keyup;
-	            if (self.key_input) key_input_select(self.key_input);
+                if (this.key_type && this.input[this.key_type] && this.input[this.key_type].onblur)
+                    this.input[this.key_type].onblur();
+	            this.key_type = key_type;
+	            this.input.onfocus=this.input[key_type].onfocus;
+	            this.input.onblur=this.input[key_type].onblur;
+	            this.input.onmidievent=this.input[key_type].onmidievent;
+	            this.input.keydown=this.input[key_type].keydown;
+	            this.input.keyup=this.input[key_type].keyup;
+	            if (this.key_input) key_input_select(this.key_input);
 	        },
 	        key_input : null,
 	        key_input_select : function(key_input) {
-	            if (self.key_input != key_input)
-		            self.midi_key.disconnect(self.key_input)
-	            self.key_input = key_input;
-	            self.midi_key.connect(key_input, self.input.onmidievent)
+	            if (this.key_input != key_input)
+		            this.midi_key.disconnect(this.key_input)
+	            this.key_input = key_input;
+	            this.midi_key.connect(key_input, this.input.onmidievent)
 	        },
 
 	        output : morse.output(context),
-	        output_detoner : morse.detone(context),
-	        output_detimer : morse.detime(context),
 	        output_decoder : morse.decode(context),
 
 	        input : morse.input(context),
-	        input_detoner : morse.detone(context),
-	        input_detimer : morse.detime(context),
 	        input_decoder : morse.decode(context),
 	        midi_key : morse.midi_input(),
 
             get_params : function() {
                 var params = {
-                    key_type : self.key_type,
-                    key_input : self.key_input,
+                    key_type : this.key_type,
+                    key_input : this.key_input,
 
-                    input_pitch : self.input.pitch,
-                    input_gain : self.input.gain,
-                    input_wpm : self.input.wpm,
-                    input_rise : self.input.rise,
-                    input_fall : self.input.fall,
+                    input_pitch : this.input.pitch,
+                    input_gain : this.input.gain,
+                    input_wpm : this.input.wpm,
+                    input_rise : this.input.rise,
+                    input_fall : this.input.fall,
 
-                    swapped : self.input.swapped,
+                    swapped : this.input.swapped,
 
-                    output_pitch : self.output.pitch,
-                    output_gain : self.output.gain,
-                    output_wpm : self.output.wpm,
-                    output_rise : self.output.rise,
-                    output_fall : self.output.fall,
+                    output_pitch : this.output.pitch,
+                    output_gain : this.output.gain,
+                    output_wpm : this.output.wpm,
+                    output_rise : this.output.rise,
+                    output_fall : this.output.fall,
                 };
                 return params;
             },
         };
 
-        var TEST_DETONER = false;
+        var TEST_DETONER = true;
 
-        self.output.connect(context.destination);
         if (TEST_DETONER) {
-	        self.output.connect(self.output_detoner.getTarget());
-	        self.output_detoner.on('transition', self.output_detimer.ontransition);
+	        self.output.connect(self.output_decoder.target);
+            self.output_decoder.connect(context.destination);
         } else {
-	        self.output.on('transition', self.output_detimer.ontransition);
+            self.output.connect(context.destination);
+	        self.output.on('transition', self.output_decoder.ontransition, self.output_decoder);
         }
-        self.output_detimer.on('element', self.output_decoder.onelement);
 
-        self.input.connect(context.destination);
         if (TEST_DETONER) {
-	        self.input.connect(self.input_detoner.getTarget());
-	        self.input_detoner.on('transition', self.input_detimer.ontransition);
+	        self.input.connect(self.input_decoder.target);
+            self.input_decoder.connect(context.destination);
         } else {
-	        self.input.straight.on('transition', self.input_detimer.ontransition);
+            self.input.connect(context.destination);
+	        self.input.straight.on('transition', self.input_decoder.ontransition, self.input_decoder);
+            self.input.iambic.on('transition', self.input_decoder.ontransition, self.input_decoder);
         }
-        self.input.iambic.on('transition', self.input_detimer.ontransition);
-
-        self.input_detimer.on('element', self.input_decoder.onelement);
 
         self.table = self.output.table;
         self.output_decoder.table = self.table;
