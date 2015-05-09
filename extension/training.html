@@ -76,7 +76,7 @@
                     station = progress.station;
                     station_ui = morse_code_ui(station, progress);
                   } else {
-                    station = morse_code_station();
+                    station = morse.station();
                     progress = study_progress(word_list_by_name(query, station.table), station);
                     station_ui = morse_code_ui(station, progress);
 

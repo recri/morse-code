@@ -61,7 +61,7 @@
     <script>
       var station;
       function onLoadHandler() {
-        station = morse_code_station();
+        station = morse.station();
         station.ui = morse_code_ui(station);
         station.input_decoder.on('letter', function(ltr, code) {
           var elt = document.getElementById("input_text");
