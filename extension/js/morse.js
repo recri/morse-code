@@ -17,39 +17,6 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 
-if (false) {
-    // for documentation, spliced inline where needed
-    function morse_code_event(target) {
-	    var self = {
-	        /**
-	         * events: installed event handlers
-	         */
-	        events : {},
-	        /**
-	         *  on: listen to events
-	         */
-	        on : function(type, func, ctx) {
-		        (self.events[type] = self.events[type] || []).push({f:func, c:ctx})
-	        },
-	        /**
-	         *  Off: stop listening to event / specific callback
-	         */
-	        off : function(type, func) {
-		        type || (self.events = {})
-		        var list = self.events[type] || [],
-		        i = list.length = func ? list.length : 0
-		        while(i-->0) func == list[i].f && list.splice(i,1)
-	        },
-	        /**
-	         * Emit: send event, callbacks will be triggered
-	         */
-	        emit : function(){
-		        var args = Array.apply([], arguments), list = self.events[args.shift()] || [], i=0, j;
-		        while (j=list[i++]) j.f.apply(j.c, args)
-	        },
-	    };
-    }
-}
 
 /*
 ** the source and license for this package may be found at github/recri/morse-code
@@ -257,6 +224,39 @@ function morse_code_table(name) {
     return table;
 }
 
+function morse_code_event() {
+	var self = {
+	    /**
+	     * events: installed event handlers
+	     */
+	    events : {},
+	    /**
+	     *  on: listen to events
+	     */
+	    on : function(type, func, ctx) {
+		    (self.events[type] = self.events[type] || []).push({f:func, c:ctx})
+	    },
+	    /**
+	     *  Off: stop listening to event / specific callback
+	     */
+	    off : function(type, func) {
+		    type || (self.events = {})
+		    var list = self.events[type] || [],
+		    i = list.length = func ? list.length : 0
+		    while(i-->0) func == list[i].f && list.splice(i,1)
+	    },
+	    /**
+	     * Emit: send event, callbacks will be triggered
+	     */
+	    emit : function(){
+		    var args = Array.apply([], arguments), list = self.events[args.shift()] || [], i=0, j;
+		    while (j=list[i++]) j.f.apply(j.c, args)
+	    },
+	    events : {},
+	};
+    return self;
+}
+
 // translate keyup/keydown into keyed sidetone
 function morse_code_player(context) {
     var self = {
@@ -297,20 +297,6 @@ function morse_code_player(context) {
 	    cancel : function() {
 	        self.key.gain.cancelScheduledValues(self.cursor = context.currentTime);
 	        self.key.gain.value = 0;
-	    },
-	    events : {},
-	    on : function(type, func, ctx) {
-	        (self.events[type] = self.events[type] || []).push({f:func, c:ctx})
-	    },
-	    off : function(type, func) {
-	        type || (self.events = {})
-	        var list = self.events[type] || [],
-	        i = list.length = func ? list.length : 0
-	        while(i-->0) func == list[i].f && list.splice(i,1)
-	    },
-	    emit : function(){
-	        var args = Array.apply([], arguments), list = self.events[args.shift()] || [], i=0, j;
-	        while (j=list[i++]) j.f.apply(j.c, args)
 	    },
     };
     // initialize the oscillator
