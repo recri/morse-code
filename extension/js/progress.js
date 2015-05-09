@@ -244,8 +244,8 @@ function study_progress(word_list, station) {
         },
         //
 	    setSpeed : function(wpm) {
-	        self.station.output.setWPM(wpm);
-	        self.station.input.setWPM(wpm);
+	        self.station.output.wpm = (wpm);
+	        self.station.input.wpm = (wpm);
             self.msPerDit = 1/(wpm * 50 * (1/60) * (1/1000)); // 1 / (words/minute * dits/word * minutes/second * second/millisecond)
 	        document.getElementById('speed').innerText = ""+wpm;
 	    },
@@ -277,9 +277,9 @@ function study_progress(word_list, station) {
 function study_progress_restore(name) {
     // console.log('study_progress_restore('+name+', '+localStorage[name]+')');
     var save = JSON.parse(localStorage.getItem(name));
-    var table = morse_code_table(save.table_name);
+    var table = morse.table(save.table_name);
     var word_list = word_list_by_name(save.word_list_name, table, save.word_list_next_i);
-    var station = morse_code_station(save.station_params);
+    var station = morse.station(save.station_params);
     var progress = study_progress(word_list, station);
     progress.items_per_session = save.items_per_session;
     progress.reps_per_item = save.reps_per_item;

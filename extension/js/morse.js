@@ -805,111 +805,92 @@
     }
 
     morse.straight_input = function(context) {
-        var self = {
-	        player : morse.player(context),
-	        setPitch : function(hertz) { self.player.pitch = hertz; },
-	        setGain : function(gain) { self.player.gain = gain; },
-	        setOnTime : function(seconds) { self.player.rise = (seconds); },
-	        setOffTime : function(seconds) { self.player.fall = (seconds); },
-	        connect : function(target) { self.player.connect(target); },
-	        raw_key_on : false,
-	        isOn : false,
-	        keyOn : function() {
-	            self.raw_key_on = true;
-	            if ( ! self.isOn) {
-		            self.player.keyOnAt(self.player.cursor);
-		            self.isOn = true;
-	            }
-	        },
-	        keyOff : function() {
-	            self.raw_key_on = false;
-	            if (self.isOn) {
-		            self.player.keyOffAt(self.player.cursor);
-		            self.isOn = false;
-	            }
-	        },
-            //
-            keydown : function(key) { self.keyOn(); },
-            keyup : function(key) { self.keyOff(); },
-            //
-	        onfocus : function() { },
-	        onblur : function() { self.keyOff(); },
-	        // handlers for MIDI
-	        onmidievent : function(event) {
-	            if (event.data.length == 3) {
-		            // console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
-		            switch (event.data[0]&0xF0) {
-		            case 0x90: self.keyon(); break;
-		            case 0x80: self.keyOff(); break;
-		            }
-	            }
-	        },
-        };
+        // extends player
+        var self = morse.player(context);
+	    self.raw_key_on = false;
+	    self.isOn = false;
+	    self.keyOn = function() {
+	        self.raw_key_on = true;
+	        if ( ! self.isOn) {
+		        self.keyOnAt(self.cursor);
+		        self.isOn = true;
+	        }
+	    };
+	    self.keyOff = function() {
+	        self.raw_key_on = false;
+	        if (self.isOn) {
+		        self.keyOffAt(self.cursor);
+		        self.isOn = false;
+	        }
+	    };
+        //
+        self.keydown = function(key) { self.keyOn(); };
+        self.keyup = function(key) { self.keyOff(); };
+        //
+	    self.onfocus = function() { };
+	    self.onblur = function() { self.keyOff(); };
+	    // handlers for MIDI
+	    self.onmidievent = function(event) {
+	        if (event.data.length == 3) {
+		        // console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
+		        switch (event.data[0]&0xF0) {
+		        case 0x90: self.keyon(); break;
+		        case 0x80: self.keyOff(); break;
+		        }
+	        }
+	    };
         return self;
     }
 
     morse.iambic_input = function(context) {
-        var self = {
-	        keyer : morse.iambic_keyer(context),
-	        setPitch : function(hertz) { self.keyer.pitch = hertz; },
-	        setGain : function(gain) { self.keyer.gain = gain; },
-	        setOnTime : function(seconds) { self.keyer.rise = (seconds); },
-	        setOffTime : function(seconds) { self.keyer.fall = (seconds); },
-	        setWPM : function(wpm) { self.keyer.wpm = (wpm); },
-	        setDah : function(dah) { self.keyer.dah = (dah); },
-	        setIes : function(ies) { self.keyer.ies = (ies); },
-	        setSwapped : function(swapped) { self.keyer.swapped = (swapped); },
-	        connect : function(target) { self.keyer.connect(target); },
-
-	        raw_dit_on : false,
-	        raw_dah_on : false,
-	        // handlers for focus
-	        onfocus : function() { self.start(); },
-	        onblur : function() { self.stop(); },
-	        // handlers for MIDI
-	        onmidievent : function(event) {
-	            if (event.data.length == 3) {
-		            // console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
-		            switch (event.data[0]&0xF0) {
-		            case 0x90: self.keydown(event.data[1]&1); break;
-		            case 0x80: self.keyup(event.data[1]&1); break;
-		            }
-	            }
-	        },
-	        // common handlers
-	        keydown : function(key) {
-	            if (key) self.raw_dit_on = true; else self.raw_dah_on = true;
-	            self.intervalFunction();
-	        },
-	        keyup : function(key) {
-	            if (key) self.raw_dit_on = false; else self.raw_dah_on = false;
-	            self.intervalFunction();
-	        },
-	        intervalLast : context.currentTime,
-	        intervalFunction : function() {
-	            var time = context.currentTime;
-	            var tick = time - self.intervalLast;
-	            self.intervalLength = (self.intervalLength + tick) / 2;
-	            self.intervalLast = time;
-	            self.keyer.clock(self.raw_dit_on, self.raw_dah_on, tick);
-	        },
-	        interval : null,
-	        start : function() {
-	            if (self.interval) {
-		            self.stop();
-	            }
-	            self.interval = setInterval(self.intervalFunction, 1);
-	        },
-	        stop : function() {
-	            if (self.interval) {
-		            clearInterval(self.interval);
-		            self.interval = null;
-	            }
-	            self.raw_dit_on = false;
-	            self.raw_dah_on = false;
-	            self.keyer.cancel();
+        // extend iambic keyer
+        var self = morse.iambic_keyer(context);
+	    self.raw_dit_on = false;
+	    self.raw_dah_on = false;
+	    // handlers for focus
+	    self.onfocus = function() { self.start(); };
+	    self.onblur = function() { self.stop(); };
+	    // handlers for MIDI
+	    self.onmidievent = function(event) {
+	        if (event.data.length == 3) {
+		        // console.log("onmidievent "+event.data[0]+" "+event.data[1]+" "+event.data[2].toString(16));
+		        switch (event.data[0]&0xF0) {
+		        case 0x90: self.key(event.data[1]&1, true); break;
+		        case 0x80: self.key(event.data[1]&1, false); break;
+		        }
 	        }
+	    };
+	    // common handlers
+        self.key = function(key, on) {
+	        if (key) self.raw_dit_on = on; else self.raw_dah_on = on;
+	        self.intervalFunction();
         };
+	    self.keydown = function(key) { self.key(key, true); };
+	    self.keyup = function(key) { self.key(key, false); };
+	    self.intervalLast = context.currentTime;
+	    self.intervalFunction = function() {
+	        var time = context.currentTime;
+	        var tick = time - self.intervalLast;
+	        self.intervalLength = (self.intervalLength + tick) / 2;
+	        self.intervalLast = time;
+	        self.clock(self.raw_dit_on, self.raw_dah_on, tick);
+	    };
+	    self.interval = null;
+	    self.start = function() {
+	        if (self.interval) {
+		        self.stop();
+	        }
+	        self.interval = setInterval(self.intervalFunction, 1);
+	    };
+	    self.stop = function() {
+	        if (self.interval) {
+		        clearInterval(self.interval);
+		        self.interval = null;
+	        }
+	        self.raw_dit_on = false;
+	        self.raw_dah_on = false;
+	        self.cancel();
+	    };
         return self;
     }
 
@@ -984,50 +965,34 @@
         var self = {
 	        straight : morse.straight_input(context),
 	        iambic : morse.iambic_input(context),
-            pitch : 0,
-	        setPitch : function(hertz) {
-	            self.straight.setPitch(hertz);
-	            self.iambic.setPitch(hertz);
-                self.pitch = hertz;
+            get pitch() { return self.iambic.pitch; },
+            set pitch(hertz) {
+	            self.straight.pitch = hertz;
+	            self.iambic.pitch = hertz;
 	        },
-            gain : 0,
-	        setGain : function(gain) {
-	            self.straight.setGain(gain);
-	            self.iambic.setGain(gain);
-                self.gain = gain;
+            get gain() { return self.iambic.gain; },
+	        set gain(gain) {
+	            self.straight.gain = gain;
+	            self.iambic.gain = gain;
 	        },
-            onTime : 0,
-	        setOnTime : function(seconds) {
-	            self.straight.setOnTime(seconds);
-	            self.iambic.setOnTime(seconds);
-                self.onTime = seconds;
+            get rise() { return self.iambic.rise; },
+	        set rise(seconds) {
+	            self.straight.rise = seconds;
+	            self.iambic.rise = seconds;
 	        },
-            offtime : 0,
-	        setOffTime : function(seconds) {
-	            self.straight.setOffTime(seconds);
-	            self.iambic.setOffTime(seconds);
-                self.offTime = seconds;
+            get fall() { return self.iambic.fall; },
+	        set fall(seconds) {
+	            self.straight.fall = seconds;
+	            self.iambic.fall = seconds;
 	        },
-            wpm : 0,
-	        setWPM : function(wpm) {
-                self.iambic.setWPM(wpm);
-                self.wpm = wpm;
-            },
-            dah : 0,
-	        setDah : function(dah) {
-                self.iambic.setDah(dah);
-                self.dah = dah;
-            },
-            ies : 0,
-	        setIes : function(ies) {
-                self.iambic.setIes(ies);
-                self.ies = ies;
-            },
-            swapped : 0,
-	        setSwapped : function(swapped) {
-                self.iambic.setSwapped(swapped);
-                self.swapped = swapped;
-            },
+            get wpm() { return self.iambic.wpm; },
+	        set wpm(wpm) { self.iambic.wpm = wpm; },
+            get dah() { return self.iambic.dah; },
+	        set dah(dah) { self.iambic.dah = (dah); },
+            get ies() { return self.iambic.ies; },
+	        set ies(ies) { self.iambic.ies = (ies); },
+            get swapped() { return self.iambic.swapped; },
+	        set swapped(swapped) { self.iambic.swapped = (swapped); },
 	        connect : function(target) {
 	            self.straight.connect(target);
 	            self.iambic.connect(target);
@@ -1043,7 +1008,8 @@
         var self = {
 	        key_type : null,
 	        key_type_select : function(key_type) {
-                if (self.key_type) self.input[self.key_type].onblur();
+                if (self.key_type && self.input[self.key_type] && self.input[self.key_type].onblur)
+                    self.input[self.key_type].onblur();
 	            self.key_type = key_type;
 	            self.input.onfocus=self.input[key_type].onfocus;
 	            self.input.onblur=self.input[key_type].onblur;
@@ -1079,16 +1045,16 @@
                     input_pitch : self.input.pitch,
                     input_gain : self.input.gain,
                     input_wpm : self.input.wpm,
-                    input_onTime : self.input.onTime,
-                    input_offTime : self.input.offTime,
+                    input_rise : self.input.rise,
+                    input_fall : self.input.fall,
 
                     swapped : self.input.swapped,
 
                     output_pitch : self.output.pitch,
                     output_gain : self.output.gain,
                     output_wpm : self.output.wpm,
-                    output_onTime : self.output.onTime,
-                    output_offTime : self.output.offTime,
+                    output_rise : self.output.rise,
+                    output_fall : self.output.fall,
                 };
                 return params;
             },
@@ -1110,9 +1076,9 @@
 	        self.input.connect(self.input_detoner.getTarget());
 	        self.input_detoner.on('transition', self.input_detimer.ontransition);
         } else {
-	        self.input.straight.player.on('transition', self.input_detimer.ontransition);
+	        self.input.straight.on('transition', self.input_detimer.ontransition);
         }
-        self.input.iambic.keyer.on('transition', self.input_detimer.ontransition);
+        self.input.iambic.on('transition', self.input_detimer.ontransition);
 
         self.input_detimer.on('element', self.input_decoder.onelement);
 
@@ -1124,19 +1090,19 @@
             self.key_type_select(params.key_type);
             self.key_input_select(params.key_input);
 
-            self.input.setPitch(params.input_pitch);
-            self.input.setGain(params.input_gain);
-            self.input.setWPM(params.input_wpm);
-            self.input.setOnTime(params.input_onTime);
-            self.input.setOffTime(params.input_offTime);
+            self.input.pitch = (params.input_pitch);
+            self.input.gain = (params.input_gain);
+            self.input.wpm = (params.input_wpm);
+            self.input.rise = (params.input_rise);
+            self.input.fall = (params.input_fall);
 
-            self.input.setSwapped(params.swapped);
+            self.input.swapped = (params.swapped);
 
-            self.output.setPitch(params.output_pitch);
-            self.output.setGain(params.output_gain);
-            self.output.setWPM(params.output_wpm);
-            self.output.setOnTime(params.output_onTime);
-            self.output.setOffTime(params.output_offTime);
+            self.output.pitch = (params.output_pitch);
+            self.output.gain = (params.output_gain);
+            self.output.wpm = (params.output_wpm);
+            self.output.rise = (params.output_rise);
+            self.output.fall = (params.output_fall);
         }
 
         return self;

@@ -115,11 +115,11 @@ function morse_code_ui(station, progress) {
             station.input.setSwapped(value);
         },
         input_controls : function() {
-	        slider("input_pitch", MIN_PITCH, MAX_PITCH, DEF_IN_PITCH, "Hz", station.input.setPitch, "  Pitch  ");
-	        slider("input_gain", MIN_GAIN, MAX_GAIN, DEF_GAIN, "dB", station.input.setGain, "  Gain  ");
-	        slider("input_speed", MIN_SPEED, MAX_SPEED, DEF_SPEED, "WPM", station.input.setWPM, "  Speed  ");
-            slider("input_rise_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", station.input.setOnTime, "  Rise  ");
-            slider("input_fall_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", station.input.setOffTime, "  Fall  ");
+	        slider("input_pitch", MIN_PITCH, MAX_PITCH, DEF_IN_PITCH, "Hz", function(hertz) { station.input.pitch = hertz; }, "  Pitch  ");
+	        slider("input_gain", MIN_GAIN, MAX_GAIN, DEF_GAIN, "dB", function(gain) { station.input.gain = gain; }, "  Gain  ");
+	        slider("input_speed", MIN_SPEED, MAX_SPEED, DEF_SPEED, "WPM", function(speed) { station.input.wpm = speed; }, "  Speed  ");
+            slider("input_rise_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", function(time) { station.input.rise = time; }, "  Rise  ");
+            slider("input_fall_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", function(time) { station.input.fall = time; }, "  Fall  ");
             self.key_midi_input_regenerate_list('key_midi_input');
             self.key_type_select('key_type');
         },
