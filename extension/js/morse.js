@@ -29,7 +29,7 @@
     // translate text into dit/dah strings
     morse.table = function(name) {
         // object defining a morse code translation
-        var table = {
+        var self = {
 	        // the name of the encoding currently in use
 	        name: null,
 	        // the object dictionary table used for encoding
@@ -46,11 +46,11 @@
 	        // that terminates each dit or dah.
 	        encode: function(string) {
 	            var result = [];
-	            if (string && table.code) {
+	            if (string && self.code) {
 		            for (var i = 0; i < string.length; i += 1) {
 		                var c = string.charAt(i).toUpperCase();
-		                if (table.code[c]) {
-			                result.push(table.code[c]);
+		                if (self.code[c]) {
+			                result.push(self.code[c]);
 			                result.push(' ')
 		                } else if (c == ' ') {
 			                result.push('  ');
@@ -60,16 +60,16 @@
 	            return result.join('');
 	        },
 	        decode : function(string) {
-	            return table.invert[string];
+	            return self.invert[string];
 	        },
 	        // take a string in arabic, cyrillic, farsi, greek, hebrew, or wabun and transliterate into roman
 	        transliterate: function(string) {
 	            var result = [];
-	            if (table.trans) {
+	            if (self.trans) {
 		            for (var i = 0; i < string.length; i += 1) {
 		                var c = string.charAt(i).toUpperCase();
-		                if (table.trans[c]) {
-			                result += table.trans[c];
+		                if (self.trans[c]) {
+			                result += self.trans[c];
 		                } else if (c == ' ') {
 			                result.push(' ');
 		                }
@@ -82,11 +82,11 @@
 	        // compute the dit length of a string
 	        ditLength : function(string) {
 	            var result = 0;
-	            if (table.dits) {
+	            if (self.dits) {
 		            for (var i = 0; i < string.length; i += 1) {
 		                var c = string.charAt(i).toUpperCase();
-		                if (table.code[c]) {
-			                result += table.dits[c];
+		                if (self.code[c]) {
+			                result += self.dits[c];
 			                result += 2;
 		                } else if (c == ' ') {
 			                result += 4;
@@ -97,24 +97,24 @@
 	        },
 	        // select the code to use
 	        setName: function(name) {
-	            if (table.name != name) {
-		            if (table.codes[name]) {
-		                table.name = name;
-		                table.code = table.codes[name];
-		                table.trans = table.transliterations[name];
-		                table.invert = {};
-		                table.dits = {}
+	            if (self.name != name) {
+		            if (self.codes[name]) {
+		                self.name = name;
+		                self.code = self.codes[name];
+		                self.trans = self.transliterations[name];
+		                self.invert = {};
+		                self.dits = {}
 		                // there is a problem with multiple translations
                         // because some morse codes get used for more than one character
                         // ignored for now
-		                for (var i in table.code) {
-			                var code = table.code[i];
-			                table.invert[code] = i; // deal with multiple letters sharing codes
-			                table.dits[i] = 0
+		                for (var i in self.code) {
+			                var code = self.code[i];
+			                self.invert[code] = i; // deal with multiple letters sharing codes
+			                self.dits[i] = 0
 			                for (var j = 0; j < code.length; j += 1) {
 			                    var c = code.charAt(j);
-			                    if (c == '.') table.dits[i] += 2;
-			                    else table.dits[i] += 4;
+			                    if (c == '.') self.dits[i] += 2;
+			                    else self.dits[i] += 4;
 			                }
 		                }
 		            }
@@ -123,7 +123,7 @@
 	        // return the list of valid name for codes
 	        getNames: function() {
 	            var names = [];
-	            for (var i in table.codes) names.push(i);
+	            for (var i in self.codes) names.push(i);
 	            return names;
 	        },
 	        // morse code translation tables
@@ -223,8 +223,8 @@
 	            }
 	        }
         };
-        table.setName(name || 'itu');
-        return table;
+        self.setName(name || 'itu');
+        return self;
     }
 
     morse.event = function() {
@@ -339,66 +339,40 @@
 
     // translate text into keyed sidetone
     morse.output = function(context) {
-        var self = {
-	        player : morse.player(context),
-	        table : morse.table(),
-	        wpm : 20,		// words per minute
-	        dit : 60.0 / (20 * 50),	// dit length is seconds
-	        dah : 3,		// dah length in dits
-	        ies : 1,		// interelement space in dits
-	        ils : 3,		// interletter space in dits
-	        iws : 7,		// interword space in dits
-	        setWPM : function(wpm) {
-	            self.wpm = wpm || 20;
-	            self.dit = 60.0 / (self.wpm * 50);
-	        },
-            pitch : 0,
-	        setPitch : function(hertz) {
-                self.player.pitch = hertz;
-                self.pitch = hertz;
+        var self = morse.player(context);
+	    self.table = morse.table();
+        Object.defineProperty(self, "wpm", {
+            set : function(wpm) {
+                wpm = Math.max(5, Math.min(100, wpm));
+                self.dit = 60.0 / (wpm * 50);
             },
-            gain : 0,
-	        setGain : function(gain) {
-                self.player.gain = gain;
-                self.gain = gain;
-            },
-            onTime : 0,
-	        setOnTime : function(seconds) {
-                self.player.rise = (seconds);
-                self.onTime = seconds;
-            },
-            offTime : 0,
-	        setOffTime : function(seconds) {
-                self.player.fall = (seconds);
-                self.offTime = seconds;
-            },
-	        connect : function(target) { self.player.connect(target); },
-	        keyOnAt : function(time) { self.player.keyOnAt(time); },
-	        keyOffAt : function(time) { self.player.keyOffAt(time); },
-	        keyHoldFor : function(seconds) { return self.player.keyHoldFor(seconds); },
-	        getCursor : function() { return self.player.cursor; },
-	        cancel : function() { self.player.cancel(); },
-	        send : function(string) {
-	            var code = self.table.encode(string);
-	            var time = self.getCursor();
-	            for (var i = 0; i < code.length; i += 1) {
-		            var c = code.charAt(i);
-		            if (c == '.' || c == '-') {
-		                self.keyOnAt(time);
-		                time = self.keyHoldFor((c == '.' ? 1 : self.dah) * self.dit);
-		                self.keyOffAt(time);
-		                time = self.keyHoldFor(self.ies * self.dit);
-		            } else if (c == ' ') {
-		                if (i+2 < code.length && code.charAt(i+1) == ' ' && code.charAt(i+2) == ' ') {
-			                time = self.keyHoldFor((self.iws-self.ies) * self.dit);
-			                i += 2;
-		                } else {
-			                time = self.keyHoldFor((self.ils-self.ies) * self.dit);
-		                }
+            get : function() { return 60 / (self.dit * 50); }
+        });
+	    self.wpm = 20;		// words per minute
+	    self.dah = 3;		// dah length in dits
+	    self.ies = 1;		// interelement space in dits
+	    self.ils = 3;		// interletter space in dits
+	    self.iws = 7.		// interword space in dits
+	    self.send = function(string) {
+	        var code = self.table.encode(string);
+	        var time = self.cursor;
+	        for (var i = 0; i < code.length; i += 1) {
+		        var c = code.charAt(i);
+		        if (c == '.' || c == '-') {
+		            self.keyOnAt(time);
+		            time = self.keyHoldFor((c == '.' ? 1 : self.dah) * self.dit);
+		            self.keyOffAt(time);
+		            time = self.keyHoldFor(self.ies * self.dit);
+		        } else if (c == ' ') {
+		            if (i+2 < code.length && code.charAt(i+1) == ' ' && code.charAt(i+2) == ' ') {
+			            time = self.keyHoldFor((self.iws-self.ies) * self.dit);
+			            i += 2;
+		            } else {
+			            time = self.keyHoldFor((self.ils-self.ies) * self.dit);
 		            }
-	            }
-	        },
-        };
+		        }
+	        }
+	    };
         return self;
     };
 
@@ -1111,7 +1085,7 @@
 	        self.output.connect(self.output_detoner.getTarget());
 	        self.output_detoner.on('transition', self.output_detimer.ontransition);
         } else {
-	        self.output.player.on('transition', self.output_detimer.ontransition);
+	        self.output.on('transition', self.output_detimer.ontransition);
         }
         self.output_detimer.on('element', self.output_decoder.onelement);
 

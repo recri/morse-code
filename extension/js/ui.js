@@ -138,11 +138,11 @@ function morse_code_ui(station, progress) {
             button_up("right-button");
         },
         output_controls : function() {
-	        slider("output_pitch", MIN_PITCH, MAX_PITCH, DEF_OUT_PITCH, "Hz", station.output.setPitch, "  Pitch  ");
-	        slider("output_gain", MIN_GAIN, MAX_GAIN, DEF_GAIN, "dB", station.output.setGain, "  Gain  ");
-	        slider("output_speed", MIN_SPEED, MAX_SPEED, DEF_SPEED, "WPM", station.output.setWPM, "  Speed  ");
-            slider("output_rise_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", station.output.setOnTime, "  Rise  ");
-            slider("output_fall_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", station.output.setOffTime, "  Fall  ");
+	        slider("output_pitch", MIN_PITCH, MAX_PITCH, DEF_OUT_PITCH, "Hz", function(hertz) { station.output.pitch = hertz; }, "  Pitch  ");
+	        slider("output_gain", MIN_GAIN, MAX_GAIN, DEF_GAIN, "dB", function(gain) { station.output.gain = gain; }, "  Gain  ");
+	        slider("output_speed", MIN_SPEED, MAX_SPEED, DEF_SPEED, "WPM", function(speed) { station.output.wpm = speed; }, "  Speed  ");
+            slider("output_rise_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", function(time) { station.output.rise = time; }, "  Rise  ");
+            slider("output_fall_time", MIN_TIME, MAX_TIME, DEF_TIME, "ms", function(time) { station.output.fall = time; }, "  Fall  ");
         },
         training_controls : function() {
             slider("items_per_session", 5, 20, 5, "items", progress.setItemsPerSession, "  Items/Session  ");
