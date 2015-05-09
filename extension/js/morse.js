@@ -506,7 +506,8 @@
 	        **
 	        ** But weight the T, 3*T, and 7*T observations by the inverse of their squared
 	        ** distance from the current estimate, and weight the T, 3*T, and 7*T observations
-	        ** by their observed frequency in morse code.
+	        */
+            /*** by their observed frequency in morse code.
 	        **
 	        ** Until detime has seen both dits and dahs, it may be a little confused.
 	        */
@@ -650,7 +651,7 @@
     }
 
     // translate iambic paddle events into keyup/keydown events
-    morse.iambic_keyer = function(player) {
+    morse.iambic_keyer = function(context) {
         /*
         ** This has been stripped down to the minimal iambic state machine
         ** from the AVR sources that accompany the article in QEX March/April
@@ -676,6 +677,7 @@
          * You should have received a copy of the GNU General Public License
          * along with this program.  If not, see <http://www.gnu.org/licenses/>.
          */
+
 
         // newkeyer.c
         // R. Traylor
@@ -719,6 +721,9 @@
 	        _perIes = _perDit * _iesLen;
         }
 
+        // extends player
+        var self = morse.player(context);
+
         function transition(state, len) {
 	        // mark the new state
 	        keyer_state = state;
@@ -726,62 +731,75 @@
 	        if (timer < 0) timer = 0;
 	        timer += len+_perIes;
 	        // sound the element
-	        var time = player.cursor;
-	        player.keyOnAt(time);
-	        player.keyOffAt(time+len);
-	        player.keyHoldFor(_perIes);
+	        var time = self.cursor;
+	        self.keyOnAt(time);
+	        self.keyOffAt(time+len);
+	        self.keyHoldFor(_perIes);
         }
 
         function make_dit() { transition(DIT, _perDit); }
         function make_dah() { transition(DAH, _perDah); }
-        var self = {
-	        clock : function(raw_dit_on, raw_dah_on, ticks) {
-	            var dit_on = _swapped ? raw_dah_on : raw_dit_on;
-	            var dah_on = _swapped ? raw_dit_on : raw_dah_on;
 
-	            // update timer
-	            timer -= ticks;
+	    self.clock = function(raw_dit_on, raw_dah_on, ticks) {
+	        var dit_on = _swapped ? raw_dah_on : raw_dit_on;
+	        var dah_on = _swapped ? raw_dit_on : raw_dah_on;
 
-	            // keyer state machine
-	            if (keyer_state == IDLE) {
-		            if (dit_on) make_dit();
+	        // update timer
+	        timer -= ticks;
+
+	        // keyer state machine
+	        if (keyer_state == IDLE) {
+		        if (dit_on) make_dit();
+		        else if (dah_on) make_dah();
+	        } else if ( timer <= _perIes/2 ) {
+		        if (keyer_state == DIT) {
+		            if ( dah_pending || dah_on ) make_dah();
+		            else if (dit_on) make_dit();
+		            else keyer_state = IDLE;
+		        } else if (keyer_state == DAH) {
+		            if ( dit_pending || dit_on ) make_dit();
 		            else if (dah_on) make_dah();
-	            } else if ( timer <= _perIes/2 ) {
-		            if (keyer_state == DIT) {
-		                if ( dah_pending || dah_on ) make_dah();
-		                else if (dit_on) make_dit();
-		                else keyer_state = IDLE;
-		            } else if (keyer_state == DAH) {
-		                if ( dit_pending || dit_on ) make_dit();
-		                else if (dah_on) make_dah();
-		                else keyer_state = IDLE;
-		            }
-	            }
+		            else keyer_state = IDLE;
+		        }
+	        }
 
-	            //*****************  dit pending state machine   *********************
-	            dit_pending = dit_pending ?
-		            keyer_state != DIT :
-		            (dit_on && keyer_state == DAH && timer < _perDah/3+_perIes);
+	        //*****************  dit pending state machine   *********************
+	        dit_pending = dit_pending ?
+		        keyer_state != DIT :
+		        (dit_on && keyer_state == DAH && timer < _perDah/3+_perIes);
 
-	            //******************  dah pending state machine   *********************
-	            dah_pending = dah_pending ?
-		            keyer_state != DAH :
-		            (dah_on && keyer_state == DIT && timer < _perDit/2+_perIes);
+	        //******************  dah pending state machine   *********************
+	        dah_pending = dah_pending ?
+		        keyer_state != DAH :
+		        (dah_on && keyer_state == DIT && timer < _perDit/2+_perIes);
 
-	        },
-	        // swap the dit and dah paddles
-	        setSwapped : function(swapped) { _swapped = swapped; },
-	        getSwapped : function() { return _swapped; },
-	        // set the words per minute generated
-	        setWpm : function(wpm) { _wpm = wpm; update(); },
-	        getWpm : function() { return _wpm; },
-	        // set the dah length in dits
-	        setDah : function(dahLen) { _dahLen = dahLen; update(); },
-	        getDah : function() { return _dahLen; },
-	        // set the inter-element length in dits
-	        setIes : function (iesLen) { _iesLen = iesLen; update(); },
-	        getIes : function() { return _iesLen; }
-        };
+	    };
+
+	    // swap the dit and dah paddles
+        Object.defineProperty(self, "swapped", {
+            set : function(swapped) { _swapped = swapped; },
+	        get : function() { return _swapped; }
+        });
+
+	    // set the words per minute generated
+        Object.defineProperty(self, "wpm", {
+	        set : function(wpm) { _wpm = wpm; update(); },
+	        get : function() { return _wpm; }
+        });
+
+	    // set the dah length in dits
+        Object.defineProperty(self, "dah", {
+	        set : function(dahLen) { _dahLen = dahLen; update(); },
+	        get : function() { return _dahLen; }
+        });
+
+	    // set the inter-element length in dits
+        Object.defineProperty(self, "ies", {
+	        set : function (iesLen) { _iesLen = iesLen; update(); },
+            get : function() { return _iesLen; }
+        });
+
+        //
         update();
         return self;
     }
@@ -832,17 +850,16 @@
 
     morse.iambic_input = function(context) {
         var self = {
-	        player : morse.player(context),
-	        keyer : null,
-	        setPitch : function(hertz) { self.player.pitch = hertz; },
-	        setGain : function(gain) { self.player.gain = gain; },
-	        setOnTime : function(seconds) { self.player.rise = (seconds); },
-	        setOffTime : function(seconds) { self.player.fall = (seconds); },
-	        setWPM : function(wpm) { self.keyer.setWpm(wpm); },
-	        setDah : function(dah) { self.keyer.setDah(dah); },
-	        setIes : function(ies) { self.keyer.setIes(ies); },
-	        setSwapped : function(swapped) { self.keyer.setSwapped(swapped); },
-	        connect : function(target) { self.player.connect(target); },
+	        keyer : morse.iambic_keyer(context),
+	        setPitch : function(hertz) { self.keyer.pitch = hertz; },
+	        setGain : function(gain) { self.keyer.gain = gain; },
+	        setOnTime : function(seconds) { self.keyer.rise = (seconds); },
+	        setOffTime : function(seconds) { self.keyer.fall = (seconds); },
+	        setWPM : function(wpm) { self.keyer.wpm = (wpm); },
+	        setDah : function(dah) { self.keyer.dah = (dah); },
+	        setIes : function(ies) { self.keyer.ies = (ies); },
+	        setSwapped : function(swapped) { self.keyer.swapped = (swapped); },
+	        connect : function(target) { self.keyer.connect(target); },
 
 	        raw_dit_on : false,
 	        raw_dah_on : false,
@@ -890,10 +907,9 @@
 	            }
 	            self.raw_dit_on = false;
 	            self.raw_dah_on = false;
-	            self.player.cancel();
+	            self.keyer.cancel();
 	        }
         };
-        self.keyer = morse.iambic_keyer(self.player);
         return self;
     }
 
@@ -1096,7 +1112,7 @@
         } else {
 	        self.input.straight.player.on('transition', self.input_detimer.ontransition);
         }
-        self.input.iambic.player.on('transition', self.input_detimer.ontransition);
+        self.input.iambic.keyer.on('transition', self.input_detimer.ontransition);
 
         self.input_detimer.on('element', self.input_decoder.onelement);
 
