@@ -296,7 +296,10 @@
             // and a keying envelope
 	        key : context.createGain(),
             // the pitch of the oscillator
-            set pitch(hertz) { this.oscillator.frequency.value = hertz; },
+            set pitch(hertz) {
+                this.oscillator.frequency.value = hertz;
+                this.emit('change:pitch', hertz);
+            },
             get pitch() { return this.oscillator.frequency.value; },
             // the envelope
             ramp : { rise : 0.004, fall : 0.004, max : 0.05 },
@@ -427,7 +430,7 @@
 	        i : 0,
 	        power : 0,
 	        setCenterAndBandwidth : function(center, bandwidth) {
-	            if (center > 0 && center > context.sampleRate/4) {
+	            if (center > 0 && center < context.sampleRate/4) {
 		            this.center = center;
 	            } else {
 		            this.center = 600;
@@ -479,7 +482,7 @@
 	        },
 	        connect : function(node) { this.scriptNode.connect(node) },
 	        get target() { return this.scriptNode; },
-            onchangepitch : function(pitch) { self.setCenterAndBandwidth(pitch, self.bandwidth); },
+            onchangepitch : function(pitch) { this.setCenterAndBandwidth(pitch, this.bandwidth); },
         });
         // setup
         self.setCenterAndBandwidth(self.center, self.bandwidth);
@@ -1038,9 +1041,11 @@
             },
         };
 
-        var TEST_DETONER = true;
+        var USE_DETONER = false;
 
-        if (TEST_DETONER) {
+        if (USE_DETONER) {
+            self.output.on('change:pitch', function(pitch) { self.output_decoder.onchangepitch(pitch); });
+            self.output_decoder.onchangepitch(self.output.pitch);
 	        self.output.connect(self.output_decoder.target);
             self.output_decoder.connect(context.destination);
         } else {
@@ -1048,7 +1053,10 @@
 	        self.output.on('transition', self.output_decoder.ontransition, self.output_decoder);
         }
 
-        if (TEST_DETONER) {
+        if (USE_DETONER) {
+            self.input.straight.on('change:pitch', function(pitch) { self.input_decoder.onchangepitch(pitch); });
+            self.input.iambic.on('change:pitch', function(pitch) { self.input_decoder.onchangepitch(pitch); });
+            self.input_decoder.onchangepitch(self.input.pitch);
 	        self.input.connect(self.input_decoder.target);
             self.input_decoder.connect(context.destination);
         } else {
