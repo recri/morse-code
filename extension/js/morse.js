@@ -28,6 +28,7 @@
     var morse = {};
 
     // our personal extender function for inheritance
+    // lucky choice, turns out that _.extend() doesn't do setters and getters
     function extend(obj, props) {
         for (prop in props) {
             if (obj[prop]) console.log("overwrite "+prop);
@@ -44,6 +45,7 @@
         }
         return obj;
     }
+
     // translate text into dit/dah strings
     morse.table = function(name) {
         // object defining a morse code translation
@@ -179,13 +181,20 @@
 	            'itu' : {
 		            '!' : '-.-.--', '"' : '.-..-.', '$' : '...-..-', '&' : '.-...', "'" : '.----.', '(' : '-.--.', ')' : '-.--.-',
 		            '+' : '.-.-.', ',' : '--..--', '-' : '-....-', '.' : '.-.-.-', '/' : '-..-.',
-		            '0' : '-----', '1': '.----', '2' : '..---', '3' : '...--', '4' : '....-', '5' : '.....', '6' : '-....', '7' : '--...', '8' : '---..', '9' : '----.',
+		            '0' : '-----', '1': '.----', '2' : '..---', '3' : '...--', '4' : '....-',
+                    '5' : '.....', '6' : '-....', '7' : '--...', '8' : '---..', '9' : '----.',
 		            ':' : '---...', ';' : '-.-.-.', '=' : '-...-', '?' : '..--..', '@' : '.--.-.',
-		            'A' : '.-', 'B' : '-...', 'C' : '-.-.', 'D' : '-..', 'E' : '.', 'F' : '..-.', 'G' : '--.', 'H' : '....', 'I' : '..', 'J' : '.---', 'K' : '-.-',
-		            'L' : '.-..', 'M' : '--', 'N' : '-.', 'O' : '---', 'P' : '.--.', 'Q' : '--.-', 'R' : '.-.', 'S' : '...', 'T' : '-', 'U' : '..-', 'V' : '...-',
-		            'W' : '.--', 'X' : '-..-', 'Y' : '-.--', 'Z' : '--..', '_' : '..--.-', },
-	            // three prosigns assigned to ascii punctuation '!' : '...-.', '%' : '.-...', '*' : '...-.-'
-	            // common latin extensions, some shared codes 'À' : '.--.-', 'Á' : '.--.-', 'Â' : '.--.-', 'Ä' : '.-.-', 'Ç' : '----', 'È' : '..-..', 'É' : '..-..', 'Ñ' : '--.--', 'Ö' : '---.', 'Ü' : '..--',
+		            'A' : '.-', 'B' : '-...', 'C' : '-.-.', 'D' : '-..', 'E' : '.', 'F' : '..-.',
+                    'G' : '--.', 'H' : '....', 'I' : '..', 'J' : '.---', 'K' : '-.-',
+		            'L' : '.-..', 'M' : '--', 'N' : '-.', 'O' : '---', 'P' : '.--.', 'Q' : '--.-',
+                    'R' : '.-.', 'S' : '...', 'T' : '-', 'U' : '..-', 'V' : '...-',
+		            'W' : '.--', 'X' : '-..-', 'Y' : '-.--', 'Z' : '--..', '_' : '..--.-',
+                    '*' : '...-.-', //  prosigns assigned to ascii punctuation
+                    'À' : '.--.-', 'Ä' : '.-.-', 'Ç' : '----', 'È' : '..-..', 'Ñ' : '--.--', 'Ö' : '---.', 'Ü' : '..--', // latin extensions
+                },
+	            // prosign that conflicts with '&' '%' : '.-...',
+                // prosign that conflicts with '!' '!' : '...-.',
+	            // latin extensions, that conflict with above  'Á' : '.--.-', 'Â' : '.--.-',  'É' : '..-..',
 	            // other latin extensions exist
 	            'wabun' : {
 		            "\u30a2" : '--.--', "\u30ab" : '.-..', "\u30b5" : '-.-.-', "\u30bf" : '-.', "\u30ca" : '.-.', "\u30cf" : '-...',
@@ -470,8 +479,10 @@
 	        },
 	        connect : function(node) { this.scriptNode.connect(node) },
 	        get target() { return this.scriptNode; },
+            onchangepitch : function(pitch) { self.setCenterAndBandwidth(pitch, self.bandwidth); },
         });
         // setup
+        self.setCenterAndBandwidth(self.center, self.bandwidth);
         self.dtime = 1.0 / context.sampleRate;
         self.scriptNode.onaudioprocess = function(audioProcessingEvent) { self.onAudioProcess(audioProcessingEvent); };
         // go
