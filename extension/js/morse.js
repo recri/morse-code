@@ -776,7 +776,7 @@
             get swapped() { return _swapped; },
 
 	    // set the words per minute generated
-	        set wpm(wpm) { _wpm = wpm; update(); },
+        set wpm(wpm) { _wpm = wpm; update(); },
 	        get wpm() { return _wpm; },
 
 	    // set the dah length in dits
